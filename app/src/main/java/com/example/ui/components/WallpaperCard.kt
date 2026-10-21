@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,14 +41,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.Wallpaper
-import com.example.ui.theme.DarkSurface
-import com.example.ui.theme.DarkSurfaceElevated
-import com.example.ui.theme.LightSurface
+import com.example.ui.theme.BrandSecondary
 import com.example.ui.theme.LightSurfaceBorder
-import com.example.ui.theme.NeonCyan
 import com.example.ui.theme.NeonPink
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 
 @Composable
 fun WallpaperCard(
@@ -59,16 +54,21 @@ fun WallpaperCard(
     modifier: Modifier = Modifier,
     aspectRatio: Float = 0.65f // portrait aspect ratio
 ) {
+    val isDark = isSystemInDarkTheme()
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
             .testTag("wallpaper_card_${wallpaper.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = LightSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, LightSurfaceBorder),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isDark) Color(0xFF334155) else LightSurfaceBorder
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 2.dp)
     ) {
         Box(
             modifier = Modifier
@@ -86,23 +86,23 @@ fun WallpaperCard(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Top Badges: Source Tag & Resolution
+            // Top Badges: Source Tag & Quick Favorite Action
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(6.dp),
                     color = Color.Black.copy(alpha = 0.65f)
                 ) {
                     Text(
                         text = wallpaper.source,
-                        color = NeonCyan,
-                        fontSize = 10.sp,
+                        color = Color.White,
+                        fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.5.dp),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -114,7 +114,7 @@ fun WallpaperCard(
                 IconButton(
                     onClick = onFavoriteToggle,
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(30.dp)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .testTag("favorite_button_${wallpaper.id}")
                 ) {
@@ -122,28 +122,28 @@ fun WallpaperCard(
                         imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Favorite",
                         tint = if (isFavorite) NeonPink else Color.White,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
             }
 
-            // Bottom Gradient Overlay & Title/Author
+            // Bottom Gradient Overlay & Title/Author (Always White for high contrast over dark gradient)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))
                         )
                     )
-                    .padding(10.dp)
+                    .padding(8.dp)
             ) {
                 Column {
                     Text(
                         text = wallpaper.title,
-                        color = TextPrimary,
-                        fontSize = 13.sp,
+                        color = Color.White,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -155,17 +155,17 @@ fun WallpaperCard(
                     ) {
                         Text(
                             text = wallpaper.author,
-                            color = TextSecondary,
-                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 10.5.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
                             text = "${wallpaper.width}p",
-                            color = NeonCyan.copy(alpha = 0.9f),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
+                            color = BrandSecondary.copy(alpha = 0.95f),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }

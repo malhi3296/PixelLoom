@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -109,10 +110,13 @@ fun DetailScreen(
                         colors = listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent)
                     )
                 )
-                .padding(horizontal = 16.dp, vertical = 40.dp)
+                .padding(horizontal = 16.dp, vertical = 36.dp),
+            contentAlignment = Alignment.Center
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 900.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -236,10 +240,13 @@ fun DetailScreen(
                         colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f))
                     )
                 )
-                .padding(horizontal = 20.dp, vertical = 28.dp)
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            contentAlignment = Alignment.Center
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 520.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

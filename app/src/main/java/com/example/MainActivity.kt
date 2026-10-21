@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -28,6 +29,7 @@ import com.example.ui.screens.DownloadsScreen
 import com.example.ui.screens.FavoritesScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.SourcesScreen
+import com.example.ui.screens.SplashScreen
 import com.example.ui.theme.PixelLoomTheme
 import com.example.ui.viewmodels.WallpaperViewModel
 
@@ -54,10 +56,27 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PixelLoomTheme {
-                MainContent(
-                    viewModel = viewModel,
-                    onHandleIntent = { handleIntent(intent) }
-                )
+                var isSplashFinished by remember { mutableStateOf(false) }
+
+                AnimatedContent(
+                    targetState = isSplashFinished,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(350)) togetherWith fadeOut(animationSpec = tween(350))
+                    },
+                    label = "SplashCrossfade",
+                    modifier = Modifier.fillMaxSize()
+                ) { finished ->
+                    if (!finished) {
+                        SplashScreen(
+                            onSplashFinished = { isSplashFinished = true }
+                        )
+                    } else {
+                        MainContent(
+                            viewModel = viewModel,
+                            onHandleIntent = { handleIntent(intent) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -110,7 +129,7 @@ fun MainContent(
 
     AnimatedContent(
         targetState = currentScreen,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(250)) },
         label = "ScreenTransition",
         modifier = Modifier.fillMaxSize()
     ) { screen ->

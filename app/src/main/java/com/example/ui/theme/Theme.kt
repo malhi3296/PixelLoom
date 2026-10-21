@@ -1,8 +1,9 @@
 package com.example.ui.theme
 
 import android.app.Activity
-import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -31,24 +32,46 @@ private val LightColorScheme = lightColorScheme(
     outline = LightSurfaceBorder
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = BrandSecondary,
+    onPrimary = Color(0xFF090D16),
+    primaryContainer = Color(0xFF1E293B),
+    onPrimaryContainer = Color.White,
+    secondary = BrandPrimary,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF1E293B),
+    onSecondaryContainer = BrandSecondary,
+    tertiary = NeonPink,
+    onTertiary = Color.White,
+    background = Color(0xFF090D16),
+    onBackground = Color.White,
+    surface = Color(0xFF111827),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF1E293B),
+    onSurfaceVariant = Color(0xFF94A3B8),
+    outline = Color(0xFF334155)
+)
+
 @Composable
 fun PixelLoomTheme(
-    darkTheme: Boolean = false, // Light mode by default
+    darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as? Activity)?.window
             if (window != null) {
-                window.statusBarColor = LightSurface.toArgb()
-                window.navigationBarColor = LightSurface.toArgb()
+                val statusBarColor = colorScheme.surface.toArgb()
+                val navBarColor = colorScheme.surface.toArgb()
+                window.statusBarColor = statusBarColor
+                window.navigationBarColor = navBarColor
                 val controller = WindowCompat.getInsetsController(window, view)
-                controller.isAppearanceLightStatusBars = true
-                controller.isAppearanceLightNavigationBars = true
+                controller.isAppearanceLightStatusBars = !darkTheme
+                controller.isAppearanceLightNavigationBars = !darkTheme
             }
         }
     }

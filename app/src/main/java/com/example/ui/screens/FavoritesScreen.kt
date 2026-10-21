@@ -1,16 +1,17 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -35,11 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Wallpaper
 import com.example.ui.components.WallpaperCard
-import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.NeonPink
-import com.example.ui.theme.Obsidian
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 import com.example.ui.viewmodels.WallpaperViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +47,10 @@ fun FavoritesScreen(
     onBack: () -> Unit,
     onWallpaperClick: (Wallpaper) -> Unit
 ) {
+    BackHandler { onBack() }
+
     val favorites by viewModel.favorites.collectAsState()
+    val isDark = isSystemInDarkTheme()
 
     Scaffold(
         topBar = {
@@ -60,12 +61,12 @@ fun FavoritesScreen(
                             text = "Favorite Wallpapers",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "${favorites.size} saved gems",
-                            fontSize = 12.sp,
-                            color = TextSecondary
+                            fontSize = 11.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -74,14 +75,14 @@ fun FavoritesScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkSurface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
-        containerColor = Obsidian
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (favorites.isEmpty()) {
             Box(
@@ -95,41 +96,48 @@ fun FavoritesScreen(
                         imageVector = Icons.Default.Favorite,
                         contentDescription = null,
                         tint = NeonPink.copy(alpha = 0.5f),
-                        modifier = Modifier.size(64.dp)
+                        modifier = Modifier.size(56.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = "No favorites saved yet",
-                        color = TextPrimary,
-                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Tap the heart on any wallpaper to curate your collection.",
-                        color = TextSecondary,
-                        fontSize = 13.sp
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.5.sp
                     )
                 }
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .testTag("favorites_grid")
+                    .padding(padding),
+                contentAlignment = Alignment.TopCenter
             ) {
-                items(favorites, key = { it.id }) { item ->
-                    WallpaperCard(
-                        wallpaper = item,
-                        isFavorite = true,
-                        onClick = { onWallpaperClick(item) },
-                        onFavoriteToggle = { viewModel.toggleFavorite(item) }
-                    )
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 160.dp),
+                    contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = 1200.dp)
+                        .testTag("favorites_grid")
+                ) {
+                    items(favorites, key = { it.id }) { item ->
+                        WallpaperCard(
+                            wallpaper = item,
+                            isFavorite = true,
+                            onClick = { onWallpaperClick(item) },
+                            onFavoriteToggle = { viewModel.toggleFavorite(item) }
+                        )
+                    }
                 }
             }
         }
