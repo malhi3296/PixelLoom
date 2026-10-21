@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">PixelLoom</string>
+    <string name="tagline">Curated Wallpapers Across the Web</string>
+    <string name="wallpapers_of_the_day">Wallpapers of the Day</string>
+    <string name="trending_wallpapers">Trending Wallpapers</string>
+    <string name="sources">Wallpaper Sources</string>
+    <string name="favorites">Favorites</string>
+    <string name="downloads">Downloaded</string>
+    <string name="search_hint">Search wallpapers, tags, aesthetics…</string>
+    <string name="set_wallpaper">Set Wallpaper</string>
+    <string name="home_screen">Home Screen</string>
+    <string name="lock_screen">Lock Screen</string>
+    <string name="both_screens">Both Screens</string>
+    <string name="download">Download</string>
+    <string name="original_dimensions">Original Dimensions</string>
+    <string name="custom_dimensions">Custom Dimensions</string>
+    <string name="notification_channel_name">PixelLoom Daily Inspiration</string>
+    <string name="notification_channel_desc">Daily aesthetic inspirations and curated trending wallpapers</string>
+</resources>

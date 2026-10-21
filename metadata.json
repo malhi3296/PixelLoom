@@ -1,0 +1,6 @@
+{
+  "name": "PixelLoom",
+  "description": "Discover, customize, and set stunning high-res wallpapers from premier creative communities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
