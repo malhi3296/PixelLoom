@@ -74,6 +74,7 @@ import com.example.data.sources.SourceRegistry
 import com.example.ui.components.WallpaperCard
 import com.example.ui.components.WallpapersOfTheDaySection
 import com.example.ui.components.WikipediaPhotographySection
+import com.example.ui.components.SpacePhotographySection
 import com.example.ui.theme.BrandPrimary
 import com.example.ui.theme.BrandSecondary
 import com.example.ui.theme.NeonPink
@@ -329,6 +330,19 @@ fun HomeScreen(
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         WikipediaPhotographySection(
                             wallpapers = uiState.wikipediaWallpapers,
+                            favoriteIds = favoriteIds,
+                            onWallpaperClick = onWallpaperClick,
+                            onFavoriteToggle = { viewModel.toggleFavorite(it) },
+                            isDark = isDark
+                        )
+                    }
+                }
+
+                // 2c. Deep Space & NASA Astrophotography Section
+                if (!uiState.isSearching && uiState.spaceWallpapers.isNotEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SpacePhotographySection(
+                            wallpapers = uiState.spaceWallpapers,
                             favoriteIds = favoriteIds,
                             onWallpaperClick = onWallpaperClick,
                             onFavoriteToggle = { viewModel.toggleFavorite(it) },

@@ -141,6 +141,39 @@ fun SourcesScreen(
                     .widthIn(max = 1100.dp)
                     .testTag("sources_grid")
             ) {
+                // 0. Tribute: Made with love by Arwinder Singh Malhi
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp, bottom = 4.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = (if (isDark) BrandSecondary else BrandPrimary).copy(alpha = if (isDark) 0.15f else 0.09f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                (if (isDark) BrandSecondary else BrandPrimary).copy(alpha = 0.28f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "Made with ❤️ by Arwinder Singh Malhi",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isDark) BrandSecondary else BrandPrimary
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // 1. System Settings & Notification Preferences
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Card(

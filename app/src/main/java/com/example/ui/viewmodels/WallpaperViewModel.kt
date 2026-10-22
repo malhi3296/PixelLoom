@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 data class WallpaperUiState(
     val wallpapersOfTheDay: List<Wallpaper> = emptyList(),
     val wikipediaWallpapers: List<Wallpaper> = emptyList(),
+    val spaceWallpapers: List<Wallpaper> = emptyList(),
     val trendingWallpapers: List<Wallpaper> = emptyList(),
     val selectedSourceId: String = "all",
     val searchQuery: String = "",
@@ -40,10 +41,17 @@ class WallpaperViewModel(
     private val actionManager: WallpaperActionManager
 ) : ViewModel() {
 
+    companion object {
+        private const val PREFS_NAME = "pixelloom_app_prefs"
+        private const val KEY_LAST_WOTD_REFRESH = "last_wotd_refresh_time"
+        private const val WOTD_24_HOURS_MS = 24 * 60 * 60 * 1000L
+    }
+
     private val _uiState = MutableStateFlow(WallpaperUiState())
     val uiState: StateFlow<WallpaperUiState> = _uiState.asStateFlow()
 
     private var searchJob: kotlinx.coroutines.Job? = null
+    private var lastAppOpenRefreshTime = 0L
 
     val favorites: StateFlow<List<Wallpaper>> = repository.getFavorites()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -52,22 +60,57 @@ class WallpaperViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        loadInitialData()
+        onAppOpened(forceRefreshAll = true)
     }
 
-    fun loadInitialData() {
-        val wotd = repository.getWallpapersOfTheDay()
-        _uiState.update { it.copy(wallpapersOfTheDay = wotd, isLoading = true, errorMessage = null) }
+    /**
+     * Refreshes all wallpapers on every app opening, EXCEPT Wallpapers of the Day
+     * which are preserved and refreshed strictly every 24 hours.
+     */
+    fun onAppOpened(forceRefreshAll: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!forceRefreshAll && now - lastAppOpenRefreshTime < 1500L) {
+            return
+        }
+        lastAppOpenRefreshTime = now
 
         viewModelScope.launch {
             try {
-                // Fetch Wikipedia featured photography
-                val wikiSource = SourceRegistry.getSourceById("wikipedia")
-                val wikiPhotos = wikiSource?.fetchTrending(1, 12) ?: emptyList()
-                _uiState.update { it.copy(wikipediaWallpapers = wikiPhotos) }
+                // 1. Wallpapers of the Day: Refresh ONLY if 24 hours have elapsed
+                val prefs = PixelLoomApp.instance.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+                val lastWotdTime = prefs.getLong(KEY_LAST_WOTD_REFRESH, 0L)
+                val isWotdExpired = (now - lastWotdTime) >= WOTD_24_HOURS_MS || _uiState.value.wallpapersOfTheDay.isEmpty()
 
-                val trending = repository.getTrendingWallpapers(sourceId = "all")
-                _uiState.update { it.copy(trendingWallpapers = trending, isLoading = false) }
+                if (isWotdExpired) {
+                    val freshWotd = repository.getWallpapersOfTheDay()
+                    _uiState.update { it.copy(wallpapersOfTheDay = freshWotd) }
+                    prefs.edit().putLong(KEY_LAST_WOTD_REFRESH, now).apply()
+                } else if (_uiState.value.wallpapersOfTheDay.isEmpty()) {
+                    val currentWotd = repository.getWallpapersOfTheDay()
+                    _uiState.update { it.copy(wallpapersOfTheDay = currentWotd) }
+                }
+
+                // 2. All other wallpapers: ALWAYS refreshed every time the app opens
+                val wikiSource = SourceRegistry.getSourceById("wikipedia")
+                val wikiPhotos = wikiSource?.fetchTrending(page = (1..3).random(), pageSize = 12) ?: emptyList()
+
+                val spaceSource = SourceRegistry.getSourceById("space_photography")
+                val spacePhotos = spaceSource?.fetchTrending(page = (1..3).random(), pageSize = 12) ?: emptyList()
+
+                val freshTrending = repository.getTrendingWallpapers(
+                    sourceId = _uiState.value.selectedSourceId,
+                    page = (1..2).random(),
+                    shuffleResults = true
+                )
+
+                _uiState.update {
+                    it.copy(
+                        wikipediaWallpapers = wikiPhotos,
+                        spaceWallpapers = spacePhotos,
+                        trendingWallpapers = freshTrending,
+                        isLoading = false
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Failed to load wallpapers") }
             }

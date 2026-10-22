@@ -14,20 +14,26 @@ import kotlinx.coroutines.withContext
 class WallpaperRepository(
     private val wallpaperDao: WallpaperDao
 ) {
-    // Exactly 10 Wallpapers of the Day
-    fun getWallpapersOfTheDay(): List<Wallpaper> {
-        return CuratedWallpaperDataset.wallpapersOfTheDay
+    // Exactly 10 Wallpapers of the Day (refreshes strictly every 24 hours based on day cycle)
+    fun getWallpapersOfTheDay(dayOfYear: Int = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR)): List<Wallpaper> {
+        val allPicks = CuratedWallpaperDataset.wallpapersOfTheDay
+        if (allPicks.isEmpty()) return emptyList()
+        val offset = (dayOfYear * 3) % allPicks.size
+        return (0 until minOf(10, allPicks.size)).map { i ->
+            val idx = (offset + i) % allPicks.size
+            allPicks[idx]
+        }
     }
 
-    suspend fun getTrendingWallpapers(sourceId: String? = null, page: Int = 1): List<Wallpaper> = withContext(Dispatchers.IO) {
+    suspend fun getTrendingWallpapers(sourceId: String? = null, page: Int = 1, shuffleResults: Boolean = false): List<Wallpaper> = withContext(Dispatchers.IO) {
         if (!sourceId.isNullOrEmpty() && sourceId != "all") {
             val source = SourceRegistry.getSourceById(sourceId)
             return@withContext source?.fetchTrending(page) ?: emptyList()
         }
 
-        // Aggregate across multiple popular sources
+        // Aggregate across multiple popular sources including Space & Wikipedia
         val results = mutableListOf<Wallpaper>()
-        val primarySources = listOf("reddit_amoled", "wallhaven", "unsplash", "reddit_wallpaper", "pexels")
+        val primarySources = listOf("reddit_amoled", "space_photography", "wallhaven", "wikipedia", "unsplash", "reddit_wallpaper", "pexels")
         for (sid in primarySources) {
             val s = SourceRegistry.getSourceById(sid)
             if (s != null) {
@@ -41,7 +47,8 @@ class WallpaperRepository(
         if (results.isEmpty()) {
             results.addAll(CuratedWallpaperDataset.wallpapersOfTheDay)
         }
-        results.distinctBy { it.id }
+        val distinct = results.distinctBy { it.id }
+        if (shuffleResults) distinct.shuffled() else distinct
     }
 
     suspend fun searchWallpapers(query: String, sourceId: String? = null, page: Int = 1): List<Wallpaper> = withContext(Dispatchers.IO) {

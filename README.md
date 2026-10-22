@@ -80,11 +80,13 @@ The latest build addresses all physical device startup edge-cases:
 
 ## ✨ Key Features & Recent Enhancements
 
-### 🌐 Curated Wallpaper Sources & Wikipedia Archive
-- **Wikipedia / Wikimedia Commons:** Dedicated carousel featuring high-resolution Wikimedia "Picture of the Day" and historic curated open photography.
+### 🌐 Curated Wallpaper Sources & Specialized Galleries
+- **🌌 Cosmic & Space Photography:** Dedicated carousel featuring James Webb Space Telescope (JWST), Hubble Space Telescope, NASA APOD, and deep-sky astrophotography (Carina Nebula, Pillars of Creation, Andromeda Galaxy, Saturn Cassini rings).
+- **🏛️ Wikipedia / Wikimedia Commons:** High-resolution Wikimedia "Picture of the Day" and historic curated open photography.
+- **🔄 Dynamic Fresh Feeds on App Open:** Every time you launch or switch back to PixelLoom, the entire collection of trending, Wikipedia, and cosmic wallpapers automatically refreshes with fresh items, while the **Wallpapers of the Day** remains pinned on a strict 24-hour cycle.
 - **Reddit Feeds:** `r/Amoledbackgrounds`, `r/wallpaper`, `r/Verticalwallpapers`, `r/MobileWallpaper`, `r/MinimalWallpaper`
 - **Design & Digital Art:** Wallhaven, Unsplash, Pexels, Pixabay, StockSnap.io, Freepik, Anime Wallpaper, Simple Desktops, and more.
-- **Universal Search:** Instant debounced search with URL-safe query handling across tags like `#Amoled`, `#Wikipedia`, `#Minimal`, `#Anime`, and custom keywords.
+- **Universal Search:** Instant debounced search with URL-safe query handling across tags like `#Space`, `#Wikipedia`, `#Amoled`, `#Minimal`, `#Anime`, and custom keywords.
 
 ### ✂️ Finger-Draggable Freeform Crop & Quick Set
 - **Draggable Crop Box:** Place fingers inside the crop rectangle to slide the selection freely across the image, or drag corner handles to resize.
@@ -105,6 +107,7 @@ The latest build addresses all physical device startup edge-cases:
 ### ⚙️ Background Inspiration & Notification Controls
 - Inspiration wallpapers schedule automatically twice a day in the background.
 - Manual triggers replaced with an **Open Notification Settings** shortcut allowing direct system-level alert customization.
+- **Creator Tribute:** Features a badge celebrating *"Made with ❤️ by Arwinder Singh Malhi"* directly above the notification and app preferences.
 
 ---
 

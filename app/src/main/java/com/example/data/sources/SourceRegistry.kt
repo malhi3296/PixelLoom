@@ -83,6 +83,9 @@ object SourceRegistry {
         // Wikipedia / Wikimedia Commons Featured Picture of the Day
         allSourcesList.add(WikipediaWallpaperSource())
 
+        // NASA, JWST & Deep Space Astrophotography
+        allSourcesList.add(SpaceWallpaperSource())
+
         // 3. Photography Powerhouses
         allSourcesList.add(
             GenericWebWallpaperSource(
