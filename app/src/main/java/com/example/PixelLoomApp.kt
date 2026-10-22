@@ -8,28 +8,32 @@ import com.example.worker.NotificationScheduler
 
 class PixelLoomApp : Application() {
 
-    lateinit var database: PixelLoomDatabase
-        private set
+    val database: PixelLoomDatabase by lazy {
+        PixelLoomDatabase.getDatabase(this)
+    }
 
-    lateinit var repository: WallpaperRepository
-        private set
+    val repository: WallpaperRepository by lazy {
+        WallpaperRepository(database.wallpaperDao())
+    }
 
-    lateinit var actionManager: WallpaperActionManager
-        private set
+    val actionManager: WallpaperActionManager by lazy {
+        WallpaperActionManager(this, repository)
+    }
 
     override fun onCreate() {
         super.onCreate()
         instance = this
 
-        database = PixelLoomDatabase.getDatabase(this)
-        repository = WallpaperRepository(database.wallpaperDao())
-        actionManager = WallpaperActionManager(this, repository)
-
-        // Schedule daily notifications
         try {
+            // Eagerly warm up singletons in a safe manner
+            val _db = database
+            val _repo = repository
+            val _mgr = actionManager
+
+            // Schedule daily notifications with fallback
             NotificationScheduler.scheduleDailyInspirations(this)
-        } catch (e: Exception) {
-            // Handled gracefully in testing/restricted environments
+        } catch (t: Throwable) {
+            android.util.Log.e("PixelLoomApp", "Non-fatal startup initialization issue: ${t.message}", t)
         }
     }
 

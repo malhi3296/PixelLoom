@@ -101,15 +101,29 @@ fun SplashScreen(
 
     // Color definitions for Light and Dark modes
     val bgBrush = if (isDark) {
-        Brush.verticalGradient(listOf(Color(0xFF090D16), Color(0xFF0F172A)))
+        Brush.verticalGradient(
+            listOf(
+                Color(0xFF090A12),
+                Color(0xFF110E1F),
+                Color(0xFF161226)
+            )
+        )
     } else {
-        Brush.verticalGradient(listOf(Color(0xFFF8FAFC), Color(0xFFEEF2FF)))
+        Brush.verticalGradient(
+            listOf(
+                Color(0xFFFFFFFF),
+                Color(0xFFFAF7FF),
+                Color(0xFFF3ECFE)
+            )
+        )
     }
 
-    val cardBg = if (isDark) Color(0xFF1E293B) else Color.White
-    val cardBorder = if (isDark) BrandSecondary.copy(alpha = 0.35f) else LightSurfaceBorder
+    // Logo squircle badge with gradient purple matching app icon
+    val badgeBrush = Brush.linearGradient(
+        colors = listOf(Color(0xFF7C3AED), Color(0xFF6B38FB), Color(0xFF5827E8))
+    )
     val titleTextColor = if (isDark) Color.White else Color(0xFF0F172A)
-    val loomColor = if (isDark) BrandSecondary else BrandPrimary
+    val subtitleColor = if (isDark) Color(0xFFA5B4FC) else Color(0xFF6B38FB)
 
     Box(
         modifier = Modifier
@@ -121,13 +135,13 @@ fun SplashScreen(
         // Ambient radial glow behind logo
         Box(
             modifier = Modifier
-                .size(240.dp)
+                .size(280.dp)
                 .scale(pulseScale)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            if (isDark) BrandSecondary.copy(alpha = 0.28f) else BrandPrimary.copy(alpha = 0.14f),
-                            if (isDark) BrandPrimary.copy(alpha = 0.15f) else BrandSecondary.copy(alpha = 0.06f),
+                            if (isDark) Color(0xFF7C3AED).copy(alpha = 0.35f) else Color(0xFF6B38FB).copy(alpha = 0.18f),
+                            if (isDark) Color(0xFF4C1D95).copy(alpha = 0.18f) else Color(0xFFA855F7).copy(alpha = 0.08f),
                             Color.Transparent
                         )
                     ),
@@ -139,101 +153,109 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Animated Logo Emblem
+            // Animated Logo Emblem - Purple background with crisp white cutout in front
             Box(
                 modifier = Modifier
-                    .size(110.dp)
+                    .size(118.dp)
                     .scale(scaleAnim.value)
                     .alpha(alphaAnim.value)
                     .shadow(
-                        elevation = if (isDark) 8.dp else 10.dp,
-                        shape = RoundedCornerShape(26.dp),
-                        spotColor = if (isDark) BrandSecondary.copy(alpha = 0.4f) else Color(0x244F46E5),
-                        ambientColor = if (isDark) BrandPrimary.copy(alpha = 0.2f) else Color(0x18000000)
+                        elevation = if (isDark) 16.dp else 12.dp,
+                        shape = RoundedCornerShape(28.dp),
+                        spotColor = Color(0xFF6B38FB).copy(alpha = if (isDark) 0.6f else 0.4f),
+                        ambientColor = Color(0xFF7C3AED).copy(alpha = 0.25f)
                     )
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(cardBg)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(badgeBrush)
                     .border(
                         width = 1.5.dp,
-                        color = cardBorder,
-                        shape = RoundedCornerShape(26.dp)
+                        color = Color.White.copy(alpha = if (isDark) 0.22f else 0.35f),
+                        shape = RoundedCornerShape(28.dp)
                     )
-                    .padding(14.dp),
+                    .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_pixelloom_logo),
-                    contentDescription = "PixelLoom Logo",
+                    painter = painterResource(id = R.drawable.ic_pixelloom_logo_white),
+                    contentDescription = "PixelLoom Logo Cutout",
                     modifier = Modifier.fillMaxSize()
                 )
             }
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(26.dp))
 
-            // Animated App Name Typography
+            // Animated App Name Typography - perfectly balanced together
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.alpha(textAlphaAnim.value)
             ) {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(color = titleTextColor, fontWeight = FontWeight.Black)) {
-                            append("Pixel")
-                        }
-                        withStyle(style = SpanStyle(color = loomColor, fontWeight = FontWeight.ExtraBold)) {
-                            append("Loom")
-                        }
-                    },
-                    fontSize = 32.sp,
-                    letterSpacing = (-0.5).sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Pixel",
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp,
+                        color = titleTextColor
+                    )
+                    Text(
+                        text = "Loom",
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp,
+                        color = Color(0xFF7C3AED)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = "CURATED HIGH-RES WALLPAPERS",
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 2.2.sp,
+                    color = subtitleColor
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            // Community pill badge and pulsing indicators
+            // Multi-Color Palette Dots & Community Badge
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.alpha(badgeAlphaAnim.value)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (isDark) Color(0xFF1E293B) else Color.White,
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isDark) Color(0xFF1E1A33) else Color.White,
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        if (isDark) Color(0xFF334155) else LightSurfaceBorder
+                        if (isDark) Color(0xFF3B3363) else Color(0xFFE2D9FC)
                     ),
-                    shadowElevation = if (isDark) 0.dp else 1.dp
+                    shadowElevation = if (isDark) 0.dp else 2.dp
                 ) {
                     Text(
-                        text = "✨ 24+ Creative Communities",
-                        color = loomColor,
-                        fontSize = 12.sp,
+                        text = "✦ 24+ Creative Communities",
+                        color = if (isDark) Color(0xFFC4B5FD) else Color(0xFF6B38FB),
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Weaving dot indicators
+                // Multi-color spectrum indicator dots reflecting logo colorways
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(BrandSecondary))
-                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(BrandPrimary))
-                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(BrandSecondary.copy(alpha = 0.5f)))
+                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF7C3AED))) // Purple
+                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF06B6D4))) // Cyan
+                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(Color(0xFFF97316))) // Sunset Orange
+                    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF10B981))) // Emerald Mint
                 }
             }
         }

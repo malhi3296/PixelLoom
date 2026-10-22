@@ -15,28 +15,36 @@ object NotificationScheduler {
      * Schedules notifications to fire twice a day (every 12 hours) with random jitter
      */
     fun scheduleDailyInspirations(context: Context) {
-        val workManager = WorkManager.getInstance(context)
+        try {
+            val workManager = WorkManager.getInstance(context)
 
-        // Schedule every 12 hours with a flexible window
-        val periodicRequest = PeriodicWorkRequestBuilder<DailyWallpaperWorker>(
-            12, TimeUnit.HOURS,
-            30, TimeUnit.MINUTES
-        ).setInitialDelay(Random.nextLong(15, 180), TimeUnit.MINUTES)
-         .build()
+            // Schedule every 12 hours with a flexible window
+            val periodicRequest = PeriodicWorkRequestBuilder<DailyWallpaperWorker>(
+                12, TimeUnit.HOURS,
+                30, TimeUnit.MINUTES
+            ).setInitialDelay(Random.nextLong(15, 180), TimeUnit.MINUTES)
+             .build()
 
-        workManager.enqueueUniquePeriodicWork(
-            PERIODIC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
-            periodicRequest
-        )
+            workManager.enqueueUniquePeriodicWork(
+                PERIODIC_WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                periodicRequest
+            )
+        } catch (e: Throwable) {
+            android.util.Log.w("NotificationScheduler", "Could not schedule daily work: ${e.message}")
+        }
     }
 
     /**
      * Trigger immediate inspiration notification for testing
      */
     fun triggerImmediateTest(context: Context) {
-        val workManager = WorkManager.getInstance(context)
-        val oneTimeRequest = OneTimeWorkRequestBuilder<DailyWallpaperWorker>().build()
-        workManager.enqueue(oneTimeRequest)
+        try {
+            val workManager = WorkManager.getInstance(context)
+            val oneTimeRequest = OneTimeWorkRequestBuilder<DailyWallpaperWorker>().build()
+            workManager.enqueue(oneTimeRequest)
+        } catch (e: Throwable) {
+            android.util.Log.w("NotificationScheduler", "Could not trigger test notification: ${e.message}")
+        }
     }
 }

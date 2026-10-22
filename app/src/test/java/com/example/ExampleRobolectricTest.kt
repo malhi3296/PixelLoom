@@ -54,4 +54,14 @@ class ExampleRobolectricTest {
             assertNotNull("Source $id should be registered", source)
         }
     }
+
+    @Test
+    fun `brand resources and logo assets exist and load`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val logoDrawable = context.getDrawable(R.drawable.ic_pixelloom_logo_white)
+        assertNotNull("White logo cutout asset must exist", logoDrawable)
+
+        val purpleDrawable = context.getDrawable(R.drawable.ic_pixelloom_logo_purple)
+        assertNotNull("Purple logo asset must exist", purpleDrawable)
+    }
 }

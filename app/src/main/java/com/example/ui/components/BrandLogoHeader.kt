@@ -45,30 +45,30 @@ fun BrandLogoHeader(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Logo Container with squircle framing & subtle depth
+        // Logo Container with vibrant purple badge & white cutout (matching app icon)
         Box(
             modifier = Modifier
                 .size(iconSize)
                 .shadow(
-                    elevation = if (isDark) 0.dp else 2.dp,
-                    shape = RoundedCornerShape(10.dp),
-                    ambientColor = Color(0x14000000),
-                    spotColor = Color(0x14000000)
+                    elevation = if (isDark) 4.dp else 3.dp,
+                    shape = RoundedCornerShape(9.dp),
+                    ambientColor = Color(0xFF6B38FB).copy(alpha = 0.3f),
+                    spotColor = Color(0xFF6B38FB).copy(alpha = 0.4f)
                 )
-                .clip(RoundedCornerShape(10.dp))
-                .background(if (isDark) Color(0xFF1E293B) else Color.White)
+                .clip(RoundedCornerShape(9.dp))
+                .background(Color(0xFF6B38FB))
                 .border(
-                    width = 1.dp,
-                    color = if (isDark) Color(0xFF334155) else LightSurfaceBorder,
-                    shape = RoundedCornerShape(10.dp)
+                    width = 0.75.dp,
+                    color = Color.White.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(9.dp)
                 )
-                .padding(2.5.dp),
+                .padding(4.5.dp),
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_pixelloom_logo),
+                painter = painterResource(id = R.drawable.ic_pixelloom_logo_white),
                 contentDescription = "PixelLoom Logo",
-                modifier = Modifier.size(iconSize - 5.dp)
+                modifier = Modifier.size(iconSize - 9.dp)
             )
         }
 
