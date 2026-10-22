@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 
 data class WallpaperUiState(
     val wallpapersOfTheDay: List<Wallpaper> = emptyList(),
+    val wikipediaWallpapers: List<Wallpaper> = emptyList(),
     val trendingWallpapers: List<Wallpaper> = emptyList(),
     val selectedSourceId: String = "all",
     val searchQuery: String = "",
@@ -42,6 +43,8 @@ class WallpaperViewModel(
     private val _uiState = MutableStateFlow(WallpaperUiState())
     val uiState: StateFlow<WallpaperUiState> = _uiState.asStateFlow()
 
+    private var searchJob: kotlinx.coroutines.Job? = null
+
     val favorites: StateFlow<List<Wallpaper>> = repository.getFavorites()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -58,6 +61,11 @@ class WallpaperViewModel(
 
         viewModelScope.launch {
             try {
+                // Fetch Wikipedia featured photography
+                val wikiSource = SourceRegistry.getSourceById("wikipedia")
+                val wikiPhotos = wikiSource?.fetchTrending(1, 12) ?: emptyList()
+                _uiState.update { it.copy(wikipediaWallpapers = wikiPhotos) }
+
                 val trending = repository.getTrendingWallpapers(sourceId = "all")
                 _uiState.update { it.copy(trendingWallpapers = trending, isLoading = false) }
             } catch (e: Exception) {
@@ -67,6 +75,7 @@ class WallpaperViewModel(
     }
 
     fun selectSource(sourceId: String) {
+        searchJob?.cancel()
         _uiState.update { it.copy(selectedSourceId = sourceId, isLoading = true, searchQuery = "", isSearching = false) }
         viewModelScope.launch {
             try {
@@ -80,10 +89,21 @@ class WallpaperViewModel(
 
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        if (query.isBlank()) {
+            _uiState.update { it.copy(isSearching = false) }
+            selectSource(_uiState.value.selectedSourceId)
+            return
+        }
+        searchJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(280)
+            executeSearch(query)
+        }
     }
 
     fun executeSearch(query: String) {
-        if (query.isBlank()) {
+        val clean = query.trim()
+        if (clean.isBlank()) {
             _uiState.update { it.copy(isSearching = false) }
             selectSource(_uiState.value.selectedSourceId)
             return
@@ -91,7 +111,7 @@ class WallpaperViewModel(
         _uiState.update { it.copy(isSearching = true, isLoading = true) }
         viewModelScope.launch {
             try {
-                val results = repository.searchWallpapers(query, _uiState.value.selectedSourceId)
+                val results = repository.searchWallpapers(clean, _uiState.value.selectedSourceId)
                 _uiState.update { it.copy(trendingWallpapers = results, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Search failed") }
@@ -100,6 +120,7 @@ class WallpaperViewModel(
     }
 
     fun clearSearch() {
+        searchJob?.cancel()
         _uiState.update { it.copy(searchQuery = "", isSearching = false) }
         selectSource(_uiState.value.selectedSourceId)
     }

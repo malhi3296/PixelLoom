@@ -23,7 +23,9 @@ class WallhavenWallpaperSource(
     }
 
     override suspend fun search(query: String, page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
-        val url = "https://wallhaven.cc/api/v1/search?q=${query}&page=$page"
+        val cleanQuery = query.trim().removePrefix("#")
+        val encodedQuery = java.net.URLEncoder.encode(cleanQuery, "UTF-8")
+        val url = "https://wallhaven.cc/api/v1/search?q=${encodedQuery}&page=$page"
         val live = parseWallhavenJson(url)
         if (live.isNotEmpty()) {
             live

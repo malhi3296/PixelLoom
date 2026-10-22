@@ -55,7 +55,11 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
 
         setContent {
-            PixelLoomTheme {
+            val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            var isDarkMode by remember { mutableStateOf<Boolean?>(null) }
+            val currentDark = isDarkMode ?: systemDark
+
+            PixelLoomTheme(darkTheme = currentDark) {
                 var isSplashFinished by remember { mutableStateOf(false) }
 
                 AnimatedContent(
@@ -73,6 +77,8 @@ class MainActivity : ComponentActivity() {
                     } else {
                         MainContent(
                             viewModel = viewModel,
+                            isDark = currentDark,
+                            onToggleTheme = { isDarkMode = !currentDark },
                             onHandleIntent = { handleIntent(intent) }
                         )
                     }
@@ -104,6 +110,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainContent(
     viewModel: WallpaperViewModel,
+    isDark: Boolean,
+    onToggleTheme: () -> Unit,
     onHandleIntent: () -> Unit
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
@@ -142,7 +150,9 @@ fun MainContent(
                 },
                 onNavigateFavorites = { currentScreen = Screen.FAVORITES },
                 onNavigateDownloads = { currentScreen = Screen.DOWNLOADS },
-                onNavigateSources = { currentScreen = Screen.SOURCES }
+                onNavigateSources = { currentScreen = Screen.SOURCES },
+                isDark = isDark,
+                onToggleTheme = onToggleTheme
             )
 
             Screen.DETAIL -> {
@@ -169,7 +179,11 @@ fun MainContent(
 
             Screen.DOWNLOADS -> DownloadsScreen(
                 viewModel = viewModel,
-                onBack = { currentScreen = Screen.HOME }
+                onBack = { currentScreen = Screen.HOME },
+                onWallpaperClick = { wallpaper ->
+                    viewModel.selectWallpaper(wallpaper)
+                    currentScreen = Screen.DETAIL
+                }
             )
 
             Screen.SOURCES -> SourcesScreen(

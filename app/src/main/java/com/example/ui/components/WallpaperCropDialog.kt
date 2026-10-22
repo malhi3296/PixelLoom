@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -99,10 +101,8 @@ enum class DragHandle {
     TOP_RIGHT,
     BOTTOM_LEFT,
     BOTTOM_RIGHT,
-    LEFT,
-    RIGHT,
-    TOP,
-    BOTTOM
+    MOVE_BOX,
+    PAN_IMAGE
 }
 
 @Composable
@@ -122,6 +122,10 @@ fun WallpaperCropDialog(
     var userScale by remember { mutableFloatStateOf(1f) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     var rotationDegrees by remember { mutableIntStateOf(0) }
+
+    // Finger drag of the entire crop box
+    var boxMoveOffsetX by remember { mutableFloatStateOf(0f) }
+    var boxMoveOffsetY by remember { mutableFloatStateOf(0f) }
 
     // Freeform manual crop adjustments
     var freeformLeftOffset by remember { mutableFloatStateOf(0f) }
@@ -176,15 +180,19 @@ fun WallpaperCropDialog(
                         val viewWidth = constraints.maxWidth.toFloat()
                         val viewHeight = constraints.maxHeight.toFloat()
 
-                        val maxCropWidth = viewWidth * 0.86f
-                        val maxCropHeight = viewHeight * 0.62f
+                        // Calculate available viewport between top and bottom bars
+                        val topInsetEstimate = 90f
+                        val bottomInsetEstimate = 190f
+                        val availableHeight = (viewHeight - topInsetEstimate - bottomInsetEstimate).coerceAtLeast(200f)
+
+                        val maxCropWidth = viewWidth * 0.90f
+                        val maxCropHeight = availableHeight * 0.94f
 
                         // Determine initial crop width & height based on aspect ratio
                         val initialCropWidth: Float
                         val initialCropHeight: Float
 
                         if (selectedRatio == CropAspectRatio.FREEFORM) {
-                            // Default freeform starts at phone ratio or image ratio
                             val defaultRatio = 9f / 19.5f
                             initialCropHeight = maxCropHeight
                             initialCropWidth = (initialCropHeight * defaultRatio).coerceAtMost(maxCropWidth)
@@ -199,17 +207,18 @@ fun WallpaperCropDialog(
                             }
                         }
 
-                        // Base centered crop rect
+                        // Center crop box in the available vertical viewport (no excessive top spacing)
+                        val viewportCenterY = topInsetEstimate + (availableHeight / 2f)
                         val baseLeft = (viewWidth - initialCropWidth) / 2f
-                        val baseTop = (viewHeight - initialCropHeight) / 2f - 25f
-                        val baseRight = (viewWidth + initialCropWidth) / 2f
-                        val baseBottom = (viewHeight + initialCropHeight) / 2f - 25f
+                        val baseTop = viewportCenterY - (initialCropHeight / 2f)
+                        val baseRight = baseLeft + initialCropWidth
+                        val baseBottom = baseTop + initialCropHeight
 
-                        // Apply freeform deltas with boundary constraints
-                        val finalCropLeft = (baseLeft + freeformLeftOffset).coerceIn(16f, baseRight + freeformRightOffset - 80f)
-                        val finalCropTop = (baseTop + freeformTopOffset).coerceIn(80f, baseBottom + freeformBottomOffset - 80f)
-                        val finalCropRight = (baseRight + freeformRightOffset).coerceIn(finalCropLeft + 80f, viewWidth - 16f)
-                        val finalCropBottom = (baseBottom + freeformBottomOffset).coerceIn(finalCropTop + 80f, viewHeight - 160f)
+                        // Apply box finger move and freeform corner deltas with boundary constraints
+                        val finalCropLeft = (baseLeft + boxMoveOffsetX + freeformLeftOffset).coerceIn(12f, viewWidth - 80f)
+                        val finalCropTop = (baseTop + boxMoveOffsetY + freeformTopOffset).coerceIn(topInsetEstimate, viewHeight - bottomInsetEstimate - 80f)
+                        val finalCropRight = (baseRight + boxMoveOffsetX + freeformRightOffset).coerceIn(finalCropLeft + 80f, viewWidth - 12f)
+                        val finalCropBottom = (baseBottom + boxMoveOffsetY + freeformBottomOffset).coerceIn(finalCropTop + 80f, viewHeight - bottomInsetEstimate)
 
                         val cropRect = Rect(
                             left = finalCropLeft,
@@ -218,56 +227,57 @@ fun WallpaperCropDialog(
                             bottom = finalCropBottom
                         )
 
-                        // Main interactive viewport handling zoom, pan, and freeform corner dragging
+                        // Main interactive viewport handling zoom, pan, and finger draggable crop box
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .pointerInput(selectedRatio) {
+                                .pointerInput(selectedRatio, cropRect) {
                                     detectDragGestures(
                                         onDragStart = { startPos ->
-                                            if (selectedRatio == CropAspectRatio.FREEFORM) {
-                                                val touchThreshold = 65f
-                                                activeHandle = when {
-                                                    (startPos - cropRect.topLeft).getDistance() < touchThreshold -> DragHandle.TOP_LEFT
-                                                    (startPos - cropRect.topRight).getDistance() < touchThreshold -> DragHandle.TOP_RIGHT
-                                                    (startPos - cropRect.bottomLeft).getDistance() < touchThreshold -> DragHandle.BOTTOM_LEFT
-                                                    (startPos - cropRect.bottomRight).getDistance() < touchThreshold -> DragHandle.BOTTOM_RIGHT
-                                                    else -> DragHandle.NONE
-                                                }
-                                            } else {
-                                                activeHandle = DragHandle.NONE
+                                            val touchThreshold = 65f
+                                            activeHandle = when {
+                                                selectedRatio == CropAspectRatio.FREEFORM && (startPos - cropRect.topLeft).getDistance() < touchThreshold -> DragHandle.TOP_LEFT
+                                                selectedRatio == CropAspectRatio.FREEFORM && (startPos - cropRect.topRight).getDistance() < touchThreshold -> DragHandle.TOP_RIGHT
+                                                selectedRatio == CropAspectRatio.FREEFORM && (startPos - cropRect.bottomLeft).getDistance() < touchThreshold -> DragHandle.BOTTOM_LEFT
+                                                selectedRatio == CropAspectRatio.FREEFORM && (startPos - cropRect.bottomRight).getDistance() < touchThreshold -> DragHandle.BOTTOM_RIGHT
+                                                cropRect.contains(startPos) -> DragHandle.MOVE_BOX
+                                                else -> DragHandle.PAN_IMAGE
                                             }
                                         },
                                         onDragEnd = { activeHandle = DragHandle.NONE },
                                         onDragCancel = { activeHandle = DragHandle.NONE },
                                         onDrag = { change, dragAmount ->
                                             change.consume()
-                                            if (activeHandle != DragHandle.NONE) {
-                                                when (activeHandle) {
-                                                    DragHandle.TOP_LEFT -> {
-                                                        freeformLeftOffset += dragAmount.x
-                                                        freeformTopOffset += dragAmount.y
-                                                    }
-                                                    DragHandle.TOP_RIGHT -> {
-                                                        freeformRightOffset += dragAmount.x
-                                                        freeformTopOffset += dragAmount.y
-                                                    }
-                                                    DragHandle.BOTTOM_LEFT -> {
-                                                        freeformLeftOffset += dragAmount.x
-                                                        freeformBottomOffset += dragAmount.y
-                                                    }
-                                                    DragHandle.BOTTOM_RIGHT -> {
-                                                        freeformRightOffset += dragAmount.x
-                                                        freeformBottomOffset += dragAmount.y
-                                                    }
-                                                    else -> {}
+                                            when (activeHandle) {
+                                                DragHandle.MOVE_BOX -> {
+                                                    // Finger moves the crop box directly
+                                                    boxMoveOffsetX += dragAmount.x
+                                                    boxMoveOffsetY += dragAmount.y
                                                 }
-                                            } else {
-                                                // Pan wallpaper
-                                                panOffset = Offset(
-                                                    x = panOffset.x + dragAmount.x,
-                                                    y = panOffset.y + dragAmount.y
-                                                )
+                                                DragHandle.PAN_IMAGE -> {
+                                                    // Pan wallpaper image
+                                                    panOffset = Offset(
+                                                        x = panOffset.x + dragAmount.x,
+                                                        y = panOffset.y + dragAmount.y
+                                                    )
+                                                }
+                                                DragHandle.TOP_LEFT -> {
+                                                    freeformLeftOffset += dragAmount.x
+                                                    freeformTopOffset += dragAmount.y
+                                                }
+                                                DragHandle.TOP_RIGHT -> {
+                                                    freeformRightOffset += dragAmount.x
+                                                    freeformTopOffset += dragAmount.y
+                                                }
+                                                DragHandle.BOTTOM_LEFT -> {
+                                                    freeformLeftOffset += dragAmount.x
+                                                    freeformBottomOffset += dragAmount.y
+                                                }
+                                                DragHandle.BOTTOM_RIGHT -> {
+                                                    freeformRightOffset += dragAmount.x
+                                                    freeformBottomOffset += dragAmount.y
+                                                }
+                                                else -> {}
                                             }
                                         }
                                     )
@@ -362,13 +372,14 @@ fun WallpaperCropDialog(
                             }
                         }
 
-                        // Top Controls Header Overlay
+                        // Top Controls Header Overlay with Status Bar Insets (eliminates top whitespace)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.TopCenter)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .padding(horizontal = 16.dp, vertical = 32.dp),
+                                .background(Color.Black.copy(alpha = 0.65f))
+                                .statusBarsPadding()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(
@@ -391,7 +402,7 @@ fun WallpaperCropDialog(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = if (selectedRatio == CropAspectRatio.FREEFORM) "Drag corners to resize freely, or pinch to zoom" else "Pinch to scale & drag to frame",
+                                    text = if (selectedRatio == CropAspectRatio.FREEFORM) "Drag inside frame to move, or drag corners to resize" else "Drag inside frame to position, or pinch to scale",
                                     color = Color.White.copy(alpha = 0.8f),
                                     fontSize = 11.sp
                                 )
@@ -416,6 +427,8 @@ fun WallpaperCropDialog(
                                     userScale = 1f
                                     panOffset = Offset.Zero
                                     rotationDegrees = 0
+                                    boxMoveOffsetX = 0f
+                                    boxMoveOffsetY = 0f
                                     freeformLeftOffset = 0f
                                     freeformTopOffset = 0f
                                     freeformRightOffset = 0f
@@ -430,13 +443,14 @@ fun WallpaperCropDialog(
                             }
                         }
 
-                        // Bottom Control Panel: Aspect Ratio Chips & Dual CTAs
+                        // Bottom Control Panel: Aspect Ratio Chips & Dual CTAs (Never behind navigation bar)
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
-                                .background(Color(0xFF0F172A).copy(alpha = 0.95f))
-                                .padding(horizontal = 16.dp, vertical = 18.dp)
+                                .background(Color(0xFF0F172A).copy(alpha = 0.98f))
+                                .navigationBarsPadding()
+                                .padding(horizontal = 16.dp, vertical = 14.dp)
                         ) {
                             // Aspect Ratio Chips
                             Row(
@@ -453,7 +467,9 @@ fun WallpaperCropDialog(
                                             .weight(1f)
                                             .clickable {
                                                 selectedRatio = ratio
-                                                // Reset freeform offsets when changing mode
+                                                // Reset freeform and box offsets when changing mode
+                                                boxMoveOffsetX = 0f
+                                                boxMoveOffsetY = 0f
                                                 freeformLeftOffset = 0f
                                                 freeformTopOffset = 0f
                                                 freeformRightOffset = 0f

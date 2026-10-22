@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,9 +31,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -141,7 +141,7 @@ fun SourcesScreen(
                     .widthIn(max = 1100.dp)
                     .testTag("sources_grid")
             ) {
-                // 1. Sleek Compact Daily Inspiration Banner
+                // 1. System Settings & Notification Preferences
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Card(
                         shape = RoundedCornerShape(12.dp),
@@ -158,53 +158,76 @@ fun SourcesScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(28.dp)
+                                    .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(AmberGlow.copy(alpha = 0.15f)),
+                                    .background((if (isDark) BrandSecondary else BrandPrimary).copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.NotificationsActive,
-                                    contentDescription = null,
-                                    tint = AmberGlow,
-                                    modifier = Modifier.size(15.dp)
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Settings",
+                                    tint = if (isDark) BrandSecondary else BrandPrimary,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Daily Inspiration Notifications",
+                                    text = "App & Notification Settings",
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 12.5.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Delivered 2x daily at random intervals",
+                                    text = "Manage system alerts & background delivery",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 10.5.sp
+                                    fontSize = 11.sp
                                 )
                             }
                             Button(
-                                onClick = { viewModel.triggerTestNotification() },
-                                colors = ButtonDefaults.buttonColors(containerColor = AmberGlow),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                onClick = {
+                                    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                        }
+                                    } else {
+                                        Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.fromParts("package", context.packageName, null)
+                                        }
+                                    }
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        try {
+                                            val fallback = Intent(android.provider.Settings.ACTION_SETTINGS)
+                                            context.startActivity(fallback)
+                                        } catch (t: Throwable) {}
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) BrandSecondary else BrandPrimary),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                 modifier = Modifier
-                                    .height(28.dp)
-                                    .testTag("trigger_notification_button")
+                                    .height(34.dp)
+                                    .testTag("open_settings_button")
                             ) {
-                                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
+                                Icon(
+                                    Icons.Default.Settings,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "Test",
+                                    text = "Open Settings",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp
+                                    fontSize = 11.5.sp
                                 )
                             }
                         }

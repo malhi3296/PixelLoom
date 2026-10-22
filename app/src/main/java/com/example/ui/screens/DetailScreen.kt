@@ -7,13 +7,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -38,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,14 +82,14 @@ fun DetailScreen(
     BackHandler { onBack() }
 
     val context = LocalContext.current
-    var showSetSheet by remember { mutableStateOf(false) }
     var showCropDialog by remember { mutableStateOf(false) }
     var showDownloadDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
 
-    val isFavorite = viewModel.favorites.value.any { it.id == wallpaper.id }
-    val isSetting = viewModel.uiState.value.isSettingWallpaper
-    val isDownloading = viewModel.uiState.value.isDownloading
+    val favorites by viewModel.favorites.collectAsState()
+    val isFavorite = remember(favorites, wallpaper.id) { favorites.any { it.id == wallpaper.id } }
+    val uiState by viewModel.uiState.collectAsState()
+    val isDownloading = uiState.isDownloading
 
     Box(
         modifier = Modifier
@@ -100,17 +104,18 @@ fun DetailScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Top Navigation & Action Bar Overlay
+        // Top Navigation & Action Bar Overlay with Status Bar Insets
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent)
+                        colors = listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent)
                     )
                 )
-                .padding(horizontal = 16.dp, vertical = 36.dp),
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -237,10 +242,11 @@ fun DetailScreen(
                 .align(Alignment.BottomCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f))
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.92f))
                     )
                 )
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -255,6 +261,7 @@ fun DetailScreen(
                     onClick = { showCropDialog = true },
                     colors = ButtonDefaults.buttonColors(containerColor = BrandPrimary),
                     shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     modifier = Modifier
                         .weight(1.3f)
                         .height(54.dp)
@@ -271,7 +278,9 @@ fun DetailScreen(
                         text = "Set Wallpaper",
                         color = Color.White,
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
 
@@ -280,9 +289,10 @@ fun DetailScreen(
                     onClick = { showDownloadDialog = true },
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.2f),
+                        containerColor = Color.White.copy(alpha = 0.22f),
                         contentColor = Color.White
                     ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                     modifier = Modifier
                         .weight(1f)
                         .height(54.dp)
@@ -299,7 +309,9 @@ fun DetailScreen(
                         text = "Download",
                         color = Color.White,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }

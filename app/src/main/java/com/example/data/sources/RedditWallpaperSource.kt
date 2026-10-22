@@ -25,7 +25,9 @@ class RedditWallpaperSource(
     }
 
     override suspend fun search(query: String, page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
-        val url = "https://www.reddit.com/r/$subreddit/search.json?q=${query}&restrict_sr=1&limit=$pageSize"
+        val cleanQuery = query.trim().removePrefix("#")
+        val encodedQuery = java.net.URLEncoder.encode(cleanQuery, "UTF-8")
+        val url = "https://www.reddit.com/r/$subreddit/search.json?q=${encodedQuery}&restrict_sr=1&limit=$pageSize"
         val live = parseRedditJson(url)
         if (live.isNotEmpty()) {
             live

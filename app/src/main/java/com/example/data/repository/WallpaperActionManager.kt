@@ -1,8 +1,12 @@
 package com.example.data.repository
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.WallpaperManager
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -10,9 +14,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import com.example.R
 import com.example.data.model.Wallpaper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,6 +38,31 @@ class WallpaperActionManager(
     private val repository: WallpaperRepository
 ) {
     private val imageLoader = ImageLoader(context)
+
+    companion object {
+        const val DOWNLOAD_CHANNEL_ID = "pixelloom_wallpaper_downloads"
+    }
+
+    init {
+        createDownloadNotificationChannel()
+    }
+
+    private fun createDownloadNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Wallpaper Downloads"
+            val descriptionText = "Displays status and progress for downloaded wallpapers"
+            val channel = NotificationChannel(
+                DOWNLOAD_CHANNEL_ID,
+                name,
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = descriptionText
+                setShowBadge(false)
+            }
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+        }
+    }
 
     suspend fun fetchBitmap(url: String): Bitmap? = withContext(Dispatchers.IO) {
         val request = ImageRequest.Builder(context)
@@ -92,9 +124,43 @@ class WallpaperActionManager(
         targetWidth: Int?,
         targetHeight: Int?
     ): Result<Uri> = withContext(Dispatchers.IO) {
+        val notificationId = (System.currentTimeMillis() % 100000).toInt() + 5000
+        val nm = NotificationManagerCompat.from(context)
+
+        // 1. Initial ongoing download notification
+        try {
+            val progressNotification = NotificationCompat.Builder(context, DOWNLOAD_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("Downloading Wallpaper")
+                .setContentText(wallpaper.title)
+                .setProgress(100, 25, false)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+            nm.notify(notificationId, progressNotification)
+        } catch (e: Throwable) {
+            // Permission or notification exception
+        }
+
         try {
             val originalBitmap = fetchBitmap(wallpaper.fullUrl)
-                ?: return@withContext Result.failure(Exception("Failed to fetch image data"))
+            if (originalBitmap == null) {
+                showDownloadFailedNotification(notificationId, wallpaper.title, "Failed to download image from source")
+                return@withContext Result.failure(Exception("Failed to fetch image data"))
+            }
+
+            // Update to 70% progress (processing/resizing)
+            try {
+                val processingNotification = NotificationCompat.Builder(context, DOWNLOAD_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle("Processing Resolution...")
+                    .setContentText(wallpaper.title)
+                    .setProgress(100, 70, false)
+                    .setOngoing(true)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .build()
+                nm.notify(notificationId, processingNotification)
+            } catch (e: Throwable) {}
 
             val processedBitmap: Bitmap = if (targetWidth != null && targetHeight != null &&
                 (targetWidth != originalBitmap.width || targetHeight != originalBitmap.height)
@@ -107,7 +173,11 @@ class WallpaperActionManager(
             val savedUri = saveBitmapToPictures(
                 bitmap = processedBitmap,
                 title = wallpaper.title.replace(Regex("[^a-zA-Z0-9_-]"), "_")
-            ) ?: return@withContext Result.failure(Exception("Failed to save image to device storage"))
+            )
+            if (savedUri == null) {
+                showDownloadFailedNotification(notificationId, wallpaper.title, "Could not write to device storage")
+                return@withContext Result.failure(Exception("Failed to save image to device storage"))
+            }
 
             // Log in download history
             repository.recordDownload(
@@ -117,10 +187,51 @@ class WallpaperActionManager(
                 height = processedBitmap.height
             )
 
+            // 3. Completion Notification with View Intent
+            try {
+                val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(savedUri, "image/*")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    notificationId,
+                    viewIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+                )
+
+                val doneNotification = NotificationCompat.Builder(context, DOWNLOAD_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle("Wallpaper Downloaded")
+                    .setContentText("${wallpaper.title} saved to Pictures/PixelLoom")
+                    .setProgress(0, 0, false)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .build()
+                nm.notify(notificationId, doneNotification)
+            } catch (e: Throwable) {}
+
             Result.success(savedUri)
         } catch (e: Exception) {
+            showDownloadFailedNotification(notificationId, wallpaper.title, e.message ?: "Download failed")
             Result.failure(e)
         }
+    }
+
+    private fun showDownloadFailedNotification(notificationId: Int, title: String, error: String) {
+        try {
+            val nm = NotificationManagerCompat.from(context)
+            val failedNotification = NotificationCompat.Builder(context, DOWNLOAD_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("Download Failed")
+                .setContentText("$title: $error")
+                .setProgress(0, 0, false)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build()
+            nm.notify(notificationId, failedNotification)
+        } catch (e: Throwable) {}
     }
 
     private fun scaleAndCropBitmap(source: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {

@@ -80,6 +80,9 @@ object SourceRegistry {
             )
         )
 
+        // Wikipedia / Wikimedia Commons Featured Picture of the Day
+        allSourcesList.add(WikipediaWallpaperSource())
+
         // 3. Photography Powerhouses
         allSourcesList.add(
             GenericWebWallpaperSource(

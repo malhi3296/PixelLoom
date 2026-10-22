@@ -31,8 +31,8 @@ The signed debug APK is ready for immediate installation on any physical Android
 
 | Artifact | Direct Link | File Size | Compatibility |
 |---|---|---|---|
-| 🚀 **PixelLoom v1.0 Universal APK** | **[Download PixelLoom-v1.0-debug.apk](./PixelLoom-v1.0-debug.apk)** | ~18 MB | Android 7.0+ (API 24 - 36) |
-| 📦 **Gradle Build Output** | `app/build/outputs/apk/debug/app-debug.apk` | ~18 MB | Universal |
+| 🚀 **PixelLoom v1.0 Universal APK** | **[Download PixelLoom-v1.0-debug.apk](./PixelLoom-v1.0-debug.apk)** | ~23 MB | Android 7.0+ (API 24 - 36) |
+| 📦 **Gradle Build Output** | `app/build/outputs/apk/debug/app-debug.apk` | ~23 MB | Universal |
 
 ### Quick Installation Guide
 1. **Download:** Click the direct link above to download **[`PixelLoom-v1.0-debug.apk`](./PixelLoom-v1.0-debug.apk)** directly to your Android device.
@@ -45,9 +45,9 @@ The signed debug APK is ready for immediate installation on any physical Android
 ## 📸 App Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/screenshot_home.jpg" width="46%" alt="PixelLoom Home Screen Feed" />
+  <img src="docs/screenshots/screenshot_home.jpg" width="46%" alt="PixelLoom Home Screen Feed with Dark Mode Toggle & Wikipedia Section" />
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/screenshot_crop.jpg" width="46%" alt="PixelLoom Freeform Crop & Set Tool" />
+  <img src="docs/screenshots/screenshot_crop.jpg" width="46%" alt="PixelLoom Draggable Crop Box & Centered Viewport" />
 </p>
 
 ---
@@ -61,6 +61,7 @@ PixelLoom features a distinctive woven pixel icon motif. The app icon pairs a ro
 </p>
 
 - **Launcher Icon:** Royal Purple background (`#6B38FB`) with pure white logo cutout (`#FFFFFF`) in front, fully adaptive across Android 8.0+ squircle/round masking.
+- **Top App Header:** Clean brand badge with an instant **Dark / Light Mode Toggle Button** replacing cluttered text headers.
 - **Splash Screen:** Beautiful dual light and dark mode splash screen with pulsing ambient aura, squircle badge, and animated typography.
 - **Multi-Color Spectrum:** Dynamic color accents including **Royal Purple**, **Cyber Cyan**, **Sunset Amber**, and **Emerald Mint**.
 
@@ -73,29 +74,37 @@ The latest build addresses all physical device startup edge-cases:
 - **Resilient WorkManager & Notification Channels:** Notification channels and background workers are isolated with defensive exception handling and standard monochromatic notification drawables (`ic_notification`).
 - **Thread-Safe Lazy Initialization:** Application singletons (Database, Repository, ActionManager) use thread-safe Kotlin lazy delegates to eliminate race conditions during cold starts and activity recreation.
 - **Scoped Storage & WallpaperManager Guarding:** Media storage and lock-screen wallpaper operations are guarded with OEM-specific API level checks.
+- **Edge-to-Edge System Bar Insets:** Full `navigationBarsPadding()` across full-screen modals and crop dialogs ensures action buttons never sit behind Android 3-button or gesture bars.
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features & Recent Enhancements
 
-### 🌐 24+ Curated Wallpaper Sources
+### 🌐 Curated Wallpaper Sources & Wikipedia Archive
+- **Wikipedia / Wikimedia Commons:** Dedicated carousel featuring high-resolution Wikimedia "Picture of the Day" and historic curated open photography.
 - **Reddit Feeds:** `r/Amoledbackgrounds`, `r/wallpaper`, `r/Verticalwallpapers`, `r/MobileWallpaper`, `r/MinimalWallpaper`
-- **Photography:** Unsplash, Pexels, Pixabay, StockSnap.io, Freepik
-- **Design & Digital Art:** Wallhaven, Wallpaper Alpha Coders, Anime Wallpaper, Simple Desktops, Designspiration, Pinterest, DeviantArt, Zedge, Wallpaper Cave, WallpaperSafari, Wallpapers.com, WallpapersWide, InterfaceLIFT, Mobiles Wall
+- **Design & Digital Art:** Wallhaven, Unsplash, Pexels, Pixabay, StockSnap.io, Freepik, Anime Wallpaper, Simple Desktops, and more.
+- **Universal Search:** Instant debounced search with URL-safe query handling across tags like `#Amoled`, `#Wikipedia`, `#Minimal`, `#Anime`, and custom keywords.
 
-### ✂️ Interactive Freeform Crop & Quick Set
-- **Single-Tap Workflow:** Direct "Set Wallpaper" action with interactive preview.
-- **Freeform Resizing:** Drag corner handles to crop any rectangular area with rule-of-thirds grid overlay.
+### ✂️ Finger-Draggable Freeform Crop & Quick Set
+- **Draggable Crop Box:** Place fingers inside the crop rectangle to slide the selection freely across the image, or drag corner handles to resize.
+- **Balanced Viewport:** Centered layout eliminating top whitespace between the top bar and bottom controls.
 - **Aspect Ratio Presets:** Switch between **Freeform**, **Phone (9:20)**, **Portrait (9:16)**, **Square (1:1)**, and **Wide (16:9)**.
 - **Full Image Mode:** One-tap option to apply wallpapers in their native aspect ratio without cropping.
 
-### 📐 Custom Resolutions & Downloads
-- High-res downloads saved directly to `Pictures/PixelLoom`.
-- Presets for FHD+, QHD+, 4K UHD, Super Retina, and custom pixel dimensions.
+### 🔔 Notification Drawer Download Progress & Actions
+- **Live Progress Bar:** Shows real-time indeterminate and tiered percentage progress in the Android notification bar while downloading.
+- **Tap to Open:** Tapping completed download notifications directly opens the saved image in your favorite gallery viewer.
 
-### 💾 Local Room Database
-- **Favorites:** Offline bookmarks with instant toggle.
-- **Download History:** Log of saved wallpapers, dimensions, and local URIs.
+### 📂 Download History with Full Preview
+- Tapping any wallpaper in the **Download History** tab opens it directly in the immersive full-screen detail view for re-applying or custom cropping.
+
+### 💖 Real-Time Favorites
+- Mark or unmark favorites directly inside the wallpaper detail view with immediate reactive UI updates.
+
+### ⚙️ Background Inspiration & Notification Controls
+- Inspiration wallpapers schedule automatically twice a day in the background.
+- Manual triggers replaced with an **Open Notification Settings** shortcut allowing direct system-level alert customization.
 
 ---
 

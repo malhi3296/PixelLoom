@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -47,6 +48,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,18 +59,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.model.Wallpaper
 import com.example.data.sources.SourceRegistry
-import com.example.ui.components.BrandLogoHeader
 import com.example.ui.components.WallpaperCard
 import com.example.ui.components.WallpapersOfTheDaySection
+import com.example.ui.components.WikipediaPhotographySection
 import com.example.ui.theme.BrandPrimary
 import com.example.ui.theme.BrandSecondary
 import com.example.ui.theme.NeonPink
@@ -79,12 +86,13 @@ fun HomeScreen(
     onWallpaperClick: (Wallpaper) -> Unit,
     onNavigateFavorites: () -> Unit,
     onNavigateDownloads: () -> Unit,
-    onNavigateSources: () -> Unit
+    onNavigateSources: () -> Unit,
+    isDark: Boolean = isSystemInDarkTheme(),
+    onToggleTheme: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
     val favoriteIds = remember(favorites) { favorites.map { it.id }.toSet() }
-    val isDark = isSystemInDarkTheme()
 
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -99,18 +107,64 @@ fun HomeScreen(
     }
 
     val sources = remember { SourceRegistry.getAllSources() }
-    val popularTags = listOf("Amoled", "Cyberpunk", "Anime", "Space", "Minimal", "Nature", "Urban", "Sci-Fi", "Abstract")
+    val popularTags = listOf("Wikipedia", "Amoled", "Cyberpunk", "Anime", "Space", "Minimal", "Nature", "Urban", "Sci-Fi", "Abstract")
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    BrandLogoHeader(
-                        iconSize = 34.dp,
-                        titleSize = 19.sp,
-                        showTagline = true,
-                        isDark = isDark
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // App Logo Icon Badge (Purple + White logo cutout)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF6B38FB))
+                                .padding(5.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_pixelloom_logo_white),
+                                contentDescription = "App Logo",
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        // Dark Mode Toggle Button (Replaces PixelLoom text & tagline)
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isDark) Color(0xFF334155) else Color(0xFFCBD5E1)
+                            ),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(18.dp))
+                                .clickable { onToggleTheme() }
+                                .testTag("dark_mode_toggle_button")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                    contentDescription = if (isDark) "Switch to Light Mode" else "Switch to Dark Mode",
+                                    tint = if (isDark) BrandSecondary else Color(0xFFF59E0B),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isDark) "Dark" else "Light",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isDark) Color.White else Color(0xFF0F172A)
+                                )
+                            }
+                        }
+                    }
                 },
                 actions = {
                     // Favorites Button
@@ -266,6 +320,19 @@ fun HomeScreen(
                             favoriteIds = favoriteIds,
                             onWallpaperClick = onWallpaperClick,
                             onFavoriteToggle = { viewModel.toggleFavorite(it) }
+                        )
+                    }
+                }
+
+                // 2b. Wikipedia Picture of the Day & Featured Photography Section
+                if (!uiState.isSearching && uiState.wikipediaWallpapers.isNotEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        WikipediaPhotographySection(
+                            wallpapers = uiState.wikipediaWallpapers,
+                            favoriteIds = favoriteIds,
+                            onWallpaperClick = onWallpaperClick,
+                            onFavoriteToggle = { viewModel.toggleFavorite(it) },
+                            isDark = isDark
                         )
                     }
                 }

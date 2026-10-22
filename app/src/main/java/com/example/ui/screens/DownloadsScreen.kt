@@ -58,11 +58,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.foundation.clickable
+import com.example.data.model.Wallpaper
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsScreen(
     viewModel: WallpaperViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onWallpaperClick: (Wallpaper) -> Unit
 ) {
     BackHandler { onBack() }
 
@@ -146,7 +150,11 @@ fun DownloadsScreen(
                         .testTag("downloads_list")
                 ) {
                     items(downloads, key = { it.localId }) { item ->
-                        DownloadHistoryItem(item, isDark)
+                        DownloadHistoryItem(
+                            item = item,
+                            isDark = isDark,
+                            onClick = { onWallpaperClick(item.toWallpaper()) }
+                        )
                     }
                 }
             }
@@ -155,7 +163,11 @@ fun DownloadsScreen(
 }
 
 @Composable
-private fun DownloadHistoryItem(item: DownloadHistoryEntity, isDark: Boolean) {
+private fun DownloadHistoryItem(
+    item: DownloadHistoryEntity,
+    isDark: Boolean,
+    onClick: () -> Unit
+) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy • HH:mm", Locale.getDefault())
 
     Card(
@@ -166,7 +178,11 @@ private fun DownloadHistoryItem(item: DownloadHistoryEntity, isDark: Boolean) {
             if (isDark) Color(0xFF334155) else LightSurfaceBorder
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isDark) 0.dp else 1.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .testTag("download_history_item_${item.localId}")
     ) {
         Row(
             modifier = Modifier.padding(10.dp),
