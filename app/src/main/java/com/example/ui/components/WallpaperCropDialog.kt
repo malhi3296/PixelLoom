@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,9 +15,12 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -144,48 +148,46 @@ fun WallpaperCropDialog(
         isLoadingBitmap = false
     }
 
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+    BackHandler { onDismissRequest() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F172A))
+            .testTag("wallpaper_crop_dialog")
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF0F172A))
-                .testTag("wallpaper_crop_dialog")
-        ) {
-            if (isLoadingBitmap || sourceBitmap == null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = BrandSecondary, strokeWidth = 3.dp)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Preparing high-res wallpaper canvas...",
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
+        if (isLoadingBitmap || sourceBitmap == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = BrandSecondary, strokeWidth = 3.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Preparing high-res wallpaper canvas...",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
                 }
-            } else {
-                val currentBitmap = remember(sourceBitmap, rotationDegrees) {
-                    val src = sourceBitmap ?: return@remember null
-                    if (rotationDegrees % 360 == 0) {
-                        src
-                    } else {
-                        val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-                        Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
-                    }
+            }
+        } else {
+            val currentBitmap = remember(sourceBitmap, rotationDegrees) {
+                val src = sourceBitmap ?: return@remember null
+                if (rotationDegrees % 360 == 0) {
+                    src
+                } else {
+                    val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+                    Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
                 }
+            }
 
-                if (currentBitmap != null) {
-                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                        val viewWidth = constraints.maxWidth.toFloat()
-                        val viewHeight = constraints.maxHeight.toFloat()
+            if (currentBitmap != null) {
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val viewWidth = constraints.maxWidth.toFloat()
+                    val viewHeight = constraints.maxHeight.toFloat()
 
-                        // Calculate available viewport between top and bottom bars
-                        val topInsetEstimate = 90f
-                        val bottomInsetEstimate = 190f
-                        val availableHeight = (viewHeight - topInsetEstimate - bottomInsetEstimate).coerceAtLeast(200f)
+                    // Calculate available viewport between top and bottom bars (reserved space for elevated bottom bar)
+                    val topInsetEstimate = 90f
+                    val bottomInsetEstimate = 260f
+                    val availableHeight = (viewHeight - topInsetEstimate - bottomInsetEstimate).coerceAtLeast(200f)
 
                         val maxCropWidth = viewWidth * 0.90f
                         val maxCropHeight = availableHeight * 0.94f
@@ -471,17 +473,24 @@ fun WallpaperCropDialog(
                         }
 
                         // 3. Bottom Action Buttons: Guaranteed strictly above system navigation buttons
+                        val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                        // Ensure at least 60dp base elevation plus 24dp spacing so buttons are never behind nav buttons
+                        val safeBottomPadding = maxOf(navBarBottom, 60.dp) + 24.dp
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
                                 .background(
                                     Brush.verticalGradient(
-                                        colors = listOf(Color.Transparent, Color(0xFF0F172A).copy(alpha = 0.95f))
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color(0xFF0F172A).copy(alpha = 0.96f),
+                                            Color(0xFF0F172A)
+                                        )
                                     )
                                 )
-                                .navigationBarsPadding()
-                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = safeBottomPadding),
                             contentAlignment = Alignment.Center
                         ) {
                             Row(
@@ -561,7 +570,6 @@ fun WallpaperCropDialog(
             }
         }
     }
-}
 
 /**
  * Mathematically extracts the exact portion of the image enclosed in the crop frame
