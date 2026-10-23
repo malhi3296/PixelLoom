@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,6 +56,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -73,8 +75,6 @@ import com.example.data.model.Wallpaper
 import com.example.data.sources.SourceRegistry
 import com.example.ui.components.WallpaperCard
 import com.example.ui.components.WallpapersOfTheDaySection
-import com.example.ui.components.WikipediaPhotographySection
-import com.example.ui.components.SpacePhotographySection
 import com.example.ui.theme.BrandPrimary
 import com.example.ui.theme.BrandSecondary
 import com.example.ui.theme.NeonPink
@@ -108,7 +108,35 @@ fun HomeScreen(
     }
 
     val sources = remember { SourceRegistry.getAllSources() }
-    val popularTags = listOf("Wikipedia", "Amoled", "Cyberpunk", "Anime", "Space", "Minimal", "Nature", "Urban", "Sci-Fi", "Abstract")
+    val trendingCategories = listOf(
+        "🔥 Trending",
+        "🖤 Amoled",
+        "🌌 Cosmic Space",
+        "🤖 Cyberpunk",
+        "⛩️ Anime",
+        "✨ Minimal",
+        "🌿 Nature",
+        "🏙️ Urban",
+        "🏛️ Wikipedia",
+        "🚀 Sci-Fi",
+        "🎨 Abstract"
+    )
+
+    // Infinite scroll detection
+    val gridState = rememberLazyGridState()
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val totalItems = gridState.layoutInfo.totalItemsCount
+            val lastVisible = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisible >= totalItems - 6
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore && !uiState.isLoading && !uiState.isLoadingMore && uiState.canLoadMore) {
+            viewModel.loadMoreWallpapers()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -168,39 +196,52 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    // Favorites Button
+                    // Favorites Button (Compact 34.dp as requested)
                     IconButton(
                         onClick = onNavigateFavorites,
-                        modifier = Modifier.testTag("nav_favorites_button")
+                        modifier = Modifier
+                            .size(34.dp)
+                            .testTag("nav_favorites_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Favorite,
                             contentDescription = "Favorites",
-                            tint = if (favorites.isNotEmpty()) NeonPink else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (favorites.isNotEmpty()) NeonPink else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(4.dp))
 
                     // Downloads Button
                     IconButton(
                         onClick = onNavigateDownloads,
-                        modifier = Modifier.testTag("nav_downloads_button")
+                        modifier = Modifier
+                            .size(34.dp)
+                            .testTag("nav_downloads_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = "Downloads",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(4.dp))
 
                     // Sources Directory Button
                     IconButton(
                         onClick = onNavigateSources,
-                        modifier = Modifier.testTag("nav_sources_button")
+                        modifier = Modifier
+                            .size(34.dp)
+                            .testTag("nav_sources_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Layers,
                             contentDescription = "Sources",
-                            tint = if (isDark) BrandSecondary else BrandPrimary
+                            tint = if (isDark) BrandSecondary else BrandPrimary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 },
@@ -217,6 +258,7 @@ fun HomeScreen(
             contentAlignment = Alignment.TopCenter
         ) {
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Adaptive(minSize = 160.dp),
                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -278,33 +320,47 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Popular Aesthetic Tag Chips
+                        // Dynamic Trending Categories Chips
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            popularTags.forEach { tag ->
+                            trendingCategories.forEach { categoryLabel ->
+                                val cleanTag = categoryLabel.substringAfter(" ")
+                                val isSelected = if (categoryLabel.contains("Trending")) {
+                                    !uiState.isSearching && uiState.selectedSourceId == "all"
+                                } else {
+                                    uiState.searchQuery.equals(cleanTag, ignoreCase = true)
+                                }
+
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    color = if (isSelected)
+                                        (if (isDark) BrandSecondary.copy(alpha = 0.2f) else BrandPrimary.copy(alpha = 0.12f))
+                                    else MaterialTheme.colorScheme.surfaceVariant,
                                     border = androidx.compose.foundation.BorderStroke(
                                         1.dp,
-                                        MaterialTheme.colorScheme.outline
+                                        if (isSelected) (if (isDark) BrandSecondary else BrandPrimary)
+                                        else MaterialTheme.colorScheme.outline
                                     ),
                                     modifier = Modifier.clickable {
-                                        viewModel.onSearchQueryChanged(tag)
-                                        viewModel.executeSearch(tag)
+                                        if (categoryLabel.contains("Trending")) {
+                                            viewModel.clearSearch()
+                                        } else {
+                                            viewModel.onSearchQueryChanged(cleanTag)
+                                            viewModel.executeSearch(cleanTag)
+                                        }
                                     }
                                 ) {
                                     Text(
-                                        text = "#$tag",
-                                        color = if (uiState.searchQuery.equals(tag, true))
-                                            if (isDark) BrandSecondary else BrandPrimary
+                                        text = categoryLabel,
+                                        color = if (isSelected)
+                                            (if (isDark) BrandSecondary else BrandPrimary)
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                                     )
                                 }
@@ -314,39 +370,17 @@ fun HomeScreen(
                 }
 
                 // 2. Wallpapers of the Day (10 Curated Daily Wallpapers)
-                if (!uiState.isSearching && uiState.wallpapersOfTheDay.isNotEmpty()) {
+                // STRICT RULE: Only shown when "All Sources" is selected and not searching
+                if (!uiState.isSearching && uiState.selectedSourceId == "all" && uiState.wallpapersOfTheDay.isNotEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         WallpapersOfTheDaySection(
                             wallpapers = uiState.wallpapersOfTheDay,
                             favoriteIds = favoriteIds,
-                            onWallpaperClick = onWallpaperClick,
+                            onWallpaperClick = { wp ->
+                                viewModel.selectWallpaperWithList(wp, uiState.wallpapersOfTheDay)
+                                onWallpaperClick(wp)
+                            },
                             onFavoriteToggle = { viewModel.toggleFavorite(it) }
-                        )
-                    }
-                }
-
-                // 2b. Wikipedia Picture of the Day & Featured Photography Section
-                if (!uiState.isSearching && uiState.wikipediaWallpapers.isNotEmpty()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        WikipediaPhotographySection(
-                            wallpapers = uiState.wikipediaWallpapers,
-                            favoriteIds = favoriteIds,
-                            onWallpaperClick = onWallpaperClick,
-                            onFavoriteToggle = { viewModel.toggleFavorite(it) },
-                            isDark = isDark
-                        )
-                    }
-                }
-
-                // 2c. Deep Space & NASA Astrophotography Section
-                if (!uiState.isSearching && uiState.spaceWallpapers.isNotEmpty()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        SpacePhotographySection(
-                            wallpapers = uiState.spaceWallpapers,
-                            favoriteIds = favoriteIds,
-                            onWallpaperClick = onWallpaperClick,
-                            onFavoriteToggle = { viewModel.toggleFavorite(it) },
-                            isDark = isDark
                         )
                     }
                 }
@@ -479,9 +513,30 @@ fun HomeScreen(
                     WallpaperCard(
                         wallpaper = item,
                         isFavorite = isFav,
-                        onClick = { onWallpaperClick(item) },
+                        onClick = {
+                            viewModel.selectWallpaperWithList(item, uiState.trendingWallpapers)
+                            onWallpaperClick(item)
+                        },
                         onFavoriteToggle = { viewModel.toggleFavorite(item) }
                     )
+                }
+
+                // 7. Infinite Scrolling Indicator
+                if (uiState.isLoadingMore) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(28.dp),
+                                color = if (isDark) BrandSecondary else BrandPrimary,
+                                strokeWidth = 2.5.dp
+                            )
+                        }
+                    }
                 }
             }
         }

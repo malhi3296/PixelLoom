@@ -98,7 +98,7 @@ fun WallpaperCard(
                     color = Color.Black.copy(alpha = 0.65f)
                 ) {
                     Text(
-                        text = wallpaper.source,
+                        text = if (wallpaper.source.contains("Wikipedia")) "Wikipedia" else wallpaper.source,
                         color = Color.White,
                         fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
@@ -110,11 +110,11 @@ fun WallpaperCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Favorite Quick Action
+                // Favorite Quick Action (Smaller top-right favorite button)
                 IconButton(
                     onClick = onFavoriteToggle,
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(26.dp)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .testTag("favorite_button_${wallpaper.id}")
                 ) {
@@ -122,7 +122,7 @@ fun WallpaperCard(
                         imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Favorite",
                         tint = if (isFavorite) NeonPink else Color.White,
-                        modifier = Modifier.size(15.dp)
+                        modifier = Modifier.size(13.dp)
                     )
                 }
             }

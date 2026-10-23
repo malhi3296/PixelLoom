@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -82,14 +84,28 @@ fun DetailScreen(
     BackHandler { onBack() }
 
     val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+    val favorites by viewModel.favorites.collectAsState()
+
+    // 1. Sliding Wallpapers Pager
+    val wallpapersList = remember(uiState.activeWallpapers, wallpaper) {
+        if (uiState.activeWallpapers.isNotEmpty()) uiState.activeWallpapers else listOf(wallpaper)
+    }
+    val initialIndex = remember(wallpaper.id, wallpapersList) {
+        val idx = wallpapersList.indexOfFirst { it.id == wallpaper.id }
+        if (idx >= 0) idx else 0
+    }
+    val pagerState = rememberPagerState(initialPage = initialIndex) {
+        wallpapersList.size
+    }
+
+    val currentWallpaper = wallpapersList.getOrNull(pagerState.currentPage) ?: wallpaper
+    val isFavorite = remember(favorites, currentWallpaper.id) { favorites.any { it.id == currentWallpaper.id } }
+
     var showCropDialog by remember { mutableStateOf(false) }
     var showDownloadDialog by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
-
-    val favorites by viewModel.favorites.collectAsState()
-    val isFavorite = remember(favorites, wallpaper.id) { favorites.any { it.id == wallpaper.id } }
-    val uiState by viewModel.uiState.collectAsState()
-    val isDownloading = uiState.isDownloading
+    var showSetWallpaperSheet by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -97,12 +113,18 @@ fun DetailScreen(
             .background(Color.Black)
             .testTag("detail_screen")
     ) {
-        // High-res Pinch-to-Zoom Wallpaper
-        ZoomableImage(
-            url = wallpaper.fullUrl,
-            contentDescription = wallpaper.title,
+        // High-res Pinch-to-Zoom Wallpaper inside HorizontalPager for smooth sliding
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier.fillMaxSize()
-        )
+        ) { page ->
+            val pageItem = wallpapersList.getOrNull(page) ?: currentWallpaper
+            ZoomableImage(
+                url = pageItem.fullUrl,
+                contentDescription = pageItem.title,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Top Navigation & Action Bar Overlay with Status Bar Insets
         Box(
@@ -115,7 +137,7 @@ fun DetailScreen(
                     )
                 )
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -127,32 +149,33 @@ fun DetailScreen(
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(38.dp)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .testTag("detail_back_button")
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = wallpaper.title,
+                        text = currentWallpaper.title,
                         color = Color.White,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "${wallpaper.source} • by ${wallpaper.author}",
+                        text = "${currentWallpaper.source} • by ${currentWallpaper.author}",
                         color = NeonCyan,
-                        fontSize = 12.sp,
+                        fontSize = 11.5.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -162,52 +185,55 @@ fun DetailScreen(
                 IconButton(
                     onClick = { showCropDialog = true },
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(34.dp)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .testTag("detail_crop_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Crop,
                         contentDescription = "Crop & Frame",
-                        tint = NeonCyan
+                        tint = NeonCyan,
+                        modifier = Modifier.size(17.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
                 // Info Dialog Button
                 IconButton(
                     onClick = { showInfoDialog = true },
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(34.dp)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .testTag("detail_info_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Info",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(17.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
-                // Favorite Button
+                // Smaller Favorite Button on Top Right (User requested smaller fav btn)
                 IconButton(
-                    onClick = { viewModel.toggleFavorite(wallpaper) },
+                    onClick = { viewModel.toggleFavorite(currentWallpaper) },
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(34.dp)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .testTag("detail_favorite_button")
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Favorite",
-                        tint = if (isFavorite) NeonPink else Color.White
+                        tint = if (isFavorite) NeonPink else Color.White,
+                        modifier = Modifier.size(17.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
                 // Share Button
                 IconButton(
@@ -216,37 +242,38 @@ fun DetailScreen(
                             type = "text/plain"
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "Check out this breathtaking '${wallpaper.title}' wallpaper on PixelLoom: ${wallpaper.fullUrl}"
+                                "Check out this breathtaking '${currentWallpaper.title}' wallpaper on PixelLoom: ${currentWallpaper.fullUrl}"
                             )
                         }
                         context.startActivity(Intent.createChooser(shareIntent, "Share Wallpaper via"))
                     },
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(34.dp)
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                         .testTag("detail_share_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = "Share",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(17.dp)
                     )
                 }
             }
         }
 
-        // Bottom Primary Actions Floating Panel
+        // Bottom Primary Actions Floating Panel (Guaranteed strictly above navigation buttons)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.92f))
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.94f))
                     )
                 )
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -256,9 +283,9 @@ fun DetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Single Unified "Set Wallpaper" Button (Opens Freeform Crop & Framing)
+                // "Set Wallpaper" Button (Opens options: Home, Lock, Both, or Set with...)
                 Button(
-                    onClick = { showCropDialog = true },
+                    onClick = { showSetWallpaperSheet = true },
                     colors = ButtonDefaults.buttonColors(containerColor = BrandPrimary),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
@@ -268,7 +295,7 @@ fun DetailScreen(
                         .testTag("set_wallpaper_button")
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Crop,
+                        imageVector = Icons.Default.Wallpaper,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
@@ -317,10 +344,26 @@ fun DetailScreen(
             }
         }
 
+        // Set Wallpaper Options: Home screen, Lockscreen, Both, or Set with... (Other gallery app)
+        if (showSetWallpaperSheet) {
+            SetWallpaperBottomSheet(
+                onDismissRequest = { showSetWallpaperSheet = false },
+                onOptionSelected = { target ->
+                    showSetWallpaperSheet = false
+                    viewModel.selectWallpaper(currentWallpaper)
+                    viewModel.setWallpaper(target)
+                },
+                onCropRequested = {
+                    showSetWallpaperSheet = false
+                    showCropDialog = true
+                }
+            )
+        }
+
         // Interactive Freeform Wallpaper Crop & Frame Dialog
         if (showCropDialog) {
             WallpaperCropDialog(
-                wallpaper = wallpaper,
+                wallpaper = currentWallpaper,
                 viewModel = viewModel,
                 onDismissRequest = { showCropDialog = false },
                 onApplyCrop = { croppedBitmap, target ->
@@ -328,6 +371,7 @@ fun DetailScreen(
                     showCropDialog = false
                 },
                 onApplyDirect = { target ->
+                    viewModel.selectWallpaper(currentWallpaper)
                     viewModel.setWallpaper(target)
                     showCropDialog = false
                 }
@@ -337,7 +381,7 @@ fun DetailScreen(
         // Download Dimensions Dialog
         if (showDownloadDialog) {
             DownloadDimensionsDialog(
-                wallpaper = wallpaper,
+                wallpaper = currentWallpaper,
                 onDismissRequest = { showDownloadDialog = false },
                 onDownloadOriginal = {
                     viewModel.downloadWithDimensions(null, null)
@@ -347,7 +391,7 @@ fun DetailScreen(
                     viewModel.downloadWithDimensions(width, height)
                     showDownloadDialog = false
                 },
-                isDownloading = isDownloading
+                isDownloading = uiState.isDownloading
             )
         }
 
@@ -362,14 +406,14 @@ fun DetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = wallpaper.title,
+                            text = currentWallpaper.title,
                             color = TextPrimary,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Created by ${wallpaper.author}",
+                            text = "Created by ${currentWallpaper.author}",
                             color = NeonCyan,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
@@ -377,11 +421,11 @@ fun DetailScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        DetailMetaRow("Platform Source", wallpaper.source)
-                        DetailMetaRow("Resolution", "${wallpaper.width} × ${wallpaper.height} px")
-                        DetailMetaRow("Category", wallpaper.category)
-                        if (wallpaper.tags.isNotEmpty()) {
-                            DetailMetaRow("Tags", wallpaper.tags.joinToString(", "))
+                        DetailMetaRow("Platform Source", currentWallpaper.source)
+                        DetailMetaRow("Resolution", "${currentWallpaper.width} × ${currentWallpaper.height} px")
+                        DetailMetaRow("Category", currentWallpaper.category)
+                        if (currentWallpaper.tags.isNotEmpty()) {
+                            DetailMetaRow("Tags", currentWallpaper.tags.joinToString(", "))
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -390,9 +434,9 @@ fun DetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
-                            if (wallpaper.authorUrl != null) {
+                            if (currentWallpaper.authorUrl != null) {
                                 androidx.compose.material3.TextButton(onClick = {
-                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(wallpaper.authorUrl))
+                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(currentWallpaper.authorUrl))
                                     context.startActivity(browserIntent)
                                 }) {
                                     Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))

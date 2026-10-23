@@ -28,12 +28,12 @@ class WallpaperRepository(
     suspend fun getTrendingWallpapers(sourceId: String? = null, page: Int = 1, shuffleResults: Boolean = false): List<Wallpaper> = withContext(Dispatchers.IO) {
         if (!sourceId.isNullOrEmpty() && sourceId != "all") {
             val source = SourceRegistry.getSourceById(sourceId)
-            return@withContext source?.fetchTrending(page) ?: emptyList()
+            return@withContext source?.fetchTrending(page, 30) ?: emptyList()
         }
 
-        // Aggregate across multiple popular sources including Space & Wikipedia
+        // Aggregate across multiple popular sources including Space & Wikipedia directly in main wallpapers
         val results = mutableListOf<Wallpaper>()
-        val primarySources = listOf("reddit_amoled", "space_photography", "wallhaven", "wikipedia", "unsplash", "reddit_wallpaper", "pexels")
+        val primarySources = listOf("reddit_amoled", "space_photography", "wikipedia", "wallhaven", "unsplash", "reddit_wallpaper", "pexels", "reddit_vertical", "reddit_mobile")
         for (sid in primarySources) {
             val s = SourceRegistry.getSourceById(sid)
             if (s != null) {

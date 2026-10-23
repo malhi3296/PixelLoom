@@ -19,9 +19,10 @@ class RedditWallpaperSource(
     override val websiteUrl: String = "https://reddit.com/r/$subreddit"
 
     override suspend fun fetchTrending(page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
-        val url = "https://www.reddit.com/r/$subreddit/hot.json?limit=$pageSize"
+        val limit = pageSize.coerceAtLeast(30)
+        val url = "https://www.reddit.com/r/$subreddit/hot.json?limit=$limit"
         val live = parseRedditJson(url)
-        if (live.isNotEmpty()) live else fallbackWallpapers
+        (live + fallbackWallpapers).distinctBy { it.id }
     }
 
     override suspend fun search(query: String, page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
@@ -29,14 +30,11 @@ class RedditWallpaperSource(
         val encodedQuery = java.net.URLEncoder.encode(cleanQuery, "UTF-8")
         val url = "https://www.reddit.com/r/$subreddit/search.json?q=${encodedQuery}&restrict_sr=1&limit=$pageSize"
         val live = parseRedditJson(url)
-        if (live.isNotEmpty()) {
-            live
-        } else {
-            fallbackWallpapers.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                it.tags.any { tag -> tag.contains(query, ignoreCase = true) }
-            }
+        val filteredFallbacks = fallbackWallpapers.filter {
+            it.title.contains(cleanQuery, ignoreCase = true) ||
+            it.tags.any { tag -> tag.contains(cleanQuery, ignoreCase = true) }
         }
+        (live + filteredFallbacks).distinctBy { it.id }
     }
 
     private suspend fun parseRedditJson(url: String): List<Wallpaper> {
@@ -55,18 +53,26 @@ class RedditWallpaperSource(
                 val over18 = child.optBoolean("over_18", false)
                 if (over18) continue // Filter NSFW
 
+                val previewSource = child.optJSONObject("preview")
+                    ?.getJSONArray("images")
+                    ?.optJSONObject(0)
+                    ?.getJSONObject("source")
+                    ?.optString("url")
+                    ?.replace("&amp;", "&")
+
                 val isImage = postUrl.endsWith(".jpg", ignoreCase = true) ||
                               postUrl.endsWith(".png", ignoreCase = true) ||
                               postUrl.endsWith(".webp", ignoreCase = true) ||
-                              postUrl.contains("i.redd.it")
+                              postUrl.contains("i.redd.it") ||
+                              !previewSource.isNullOrEmpty()
 
                 if (isImage) {
-                    val previewUrl = child.optJSONObject("preview")
-                        ?.getJSONArray("images")
-                        ?.optJSONObject(0)
-                        ?.getJSONObject("source")
-                        ?.optString("url")
-                        ?.replace("&amp;", "&") ?: postUrl
+                    val finalFullUrl = if (postUrl.contains("i.redd.it") || postUrl.endsWith(".jpg") || postUrl.endsWith(".png") || postUrl.endsWith(".webp")) {
+                        postUrl
+                    } else {
+                        previewSource ?: postUrl
+                    }
+                    val previewUrl = previewSource ?: postUrl
 
                     // Extract resolution from title if present e.g. [1440x2560]
                     var width = 1080

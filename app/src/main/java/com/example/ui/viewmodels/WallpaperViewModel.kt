@@ -25,10 +25,14 @@ data class WallpaperUiState(
     val wikipediaWallpapers: List<Wallpaper> = emptyList(),
     val spaceWallpapers: List<Wallpaper> = emptyList(),
     val trendingWallpapers: List<Wallpaper> = emptyList(),
+    val activeWallpapers: List<Wallpaper> = emptyList(),
+    val selectedWallpaperIndex: Int = 0,
     val selectedSourceId: String = "all",
     val searchQuery: String = "",
     val isSearching: Boolean = false,
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val canLoadMore: Boolean = true,
     val errorMessage: String? = null,
     val selectedWallpaper: Wallpaper? = null,
     val isSettingWallpaper: Boolean = false,
@@ -52,6 +56,7 @@ class WallpaperViewModel(
 
     private var searchJob: kotlinx.coroutines.Job? = null
     private var lastAppOpenRefreshTime = 0L
+    private var currentPage = 1
 
     val favorites: StateFlow<List<Wallpaper>> = repository.getFavorites()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -119,13 +124,46 @@ class WallpaperViewModel(
 
     fun selectSource(sourceId: String) {
         searchJob?.cancel()
-        _uiState.update { it.copy(selectedSourceId = sourceId, isLoading = true, searchQuery = "", isSearching = false) }
+        currentPage = 1
+        _uiState.update { it.copy(selectedSourceId = sourceId, isLoading = true, searchQuery = "", isSearching = false, canLoadMore = true) }
         viewModelScope.launch {
             try {
-                val wallpapers = repository.getTrendingWallpapers(sourceId = sourceId)
-                _uiState.update { it.copy(trendingWallpapers = wallpapers, isLoading = false) }
+                val wallpapers = repository.getTrendingWallpapers(sourceId = sourceId, page = 1)
+                _uiState.update { it.copy(trendingWallpapers = wallpapers, isLoading = false, canLoadMore = wallpapers.size >= 6) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Could not load source") }
+            }
+        }
+    }
+
+    fun loadMoreWallpapers() {
+        val state = _uiState.value
+        if (state.isLoadingMore || !state.canLoadMore || state.isSearching) return
+
+        _uiState.update { it.copy(isLoadingMore = true) }
+        viewModelScope.launch {
+            try {
+                val nextPage = currentPage + 1
+                val newItems = repository.getTrendingWallpapers(
+                    sourceId = state.selectedSourceId,
+                    page = nextPage,
+                    shuffleResults = false
+                )
+                if (newItems.isNotEmpty()) {
+                    currentPage = nextPage
+                    _uiState.update {
+                        val combined = (it.trendingWallpapers + newItems).distinctBy { w -> w.id }
+                        it.copy(
+                            trendingWallpapers = combined,
+                            isLoadingMore = false,
+                            canLoadMore = newItems.size >= 4
+                        )
+                    }
+                } else {
+                    _uiState.update { it.copy(isLoadingMore = false, canLoadMore = false) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoadingMore = false) }
             }
         }
     }
@@ -169,14 +207,45 @@ class WallpaperViewModel(
     }
 
     fun selectWallpaper(wallpaper: Wallpaper) {
-        _uiState.update { it.copy(selectedWallpaper = wallpaper) }
+        val list = _uiState.value.trendingWallpapers
+        val idx = list.indexOfFirst { it.id == wallpaper.id }.coerceAtLeast(0)
+        _uiState.update {
+            it.copy(
+                selectedWallpaper = wallpaper,
+                activeWallpapers = if (list.isNotEmpty()) list else listOf(wallpaper),
+                selectedWallpaperIndex = idx
+            )
+        }
+    }
+
+    fun selectWallpaperWithList(wallpaper: Wallpaper, list: List<Wallpaper>) {
+        val idx = list.indexOfFirst { it.id == wallpaper.id }.coerceAtLeast(0)
+        _uiState.update {
+            it.copy(
+                selectedWallpaper = wallpaper,
+                activeWallpapers = list,
+                selectedWallpaperIndex = idx
+            )
+        }
+    }
+
+    fun updateSelectedWallpaperIndex(index: Int) {
+        val list = _uiState.value.activeWallpapers
+        if (index in list.indices) {
+            _uiState.update {
+                it.copy(
+                    selectedWallpaperIndex = index,
+                    selectedWallpaper = list[index]
+                )
+            }
+        }
     }
 
     fun selectWallpaperById(id: String) {
         viewModelScope.launch {
             val found = repository.findWallpaperById(id)
             if (found != null) {
-                _uiState.update { it.copy(selectedWallpaper = found) }
+                selectWallpaper(found)
             }
         }
     }
@@ -198,8 +267,10 @@ class WallpaperViewModel(
                     WallpaperTarget.HOME -> "Home screen"
                     WallpaperTarget.LOCK -> "Lock screen"
                     WallpaperTarget.BOTH -> "Home & Lock screens"
+                    WallpaperTarget.EXTERNAL -> "Gallery app"
                 }
-                _uiState.update { it.copy(isSettingWallpaper = false, actionMessage = "Successfully set as $targetName wallpaper!") }
+                val msg = if (target == WallpaperTarget.EXTERNAL) "Opened in wallpaper chooser!" else "Successfully set as $targetName wallpaper!"
+                _uiState.update { it.copy(isSettingWallpaper = false, actionMessage = msg) }
             } else {
                 _uiState.update { it.copy(isSettingWallpaper = false, actionMessage = "Error setting wallpaper: ${result.exceptionOrNull()?.localizedMessage}") }
             }
@@ -215,8 +286,10 @@ class WallpaperViewModel(
                     WallpaperTarget.HOME -> "Home screen"
                     WallpaperTarget.LOCK -> "Lock screen"
                     WallpaperTarget.BOTH -> "Home & Lock screens"
+                    WallpaperTarget.EXTERNAL -> "Gallery app"
                 }
-                _uiState.update { it.copy(isSettingWallpaper = false, actionMessage = "Cropped wallpaper applied to $targetName!") }
+                val msg = if (target == WallpaperTarget.EXTERNAL) "Opened cropped wallpaper in chooser!" else "Cropped wallpaper applied to $targetName!"
+                _uiState.update { it.copy(isSettingWallpaper = false, actionMessage = msg) }
             } else {
                 _uiState.update { it.copy(isSettingWallpaper = false, actionMessage = "Error setting cropped wallpaper: ${result.exceptionOrNull()?.localizedMessage}") }
             }

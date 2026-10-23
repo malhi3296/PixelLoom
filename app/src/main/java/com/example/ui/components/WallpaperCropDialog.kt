@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -57,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
@@ -372,56 +374,28 @@ fun WallpaperCropDialog(
                             }
                         }
 
-                        // Top Controls Header Overlay with Status Bar Insets (eliminates top whitespace)
+                        // 1. Top Controls: ONLY Close and Undo (Reset) buttons as requested
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.TopCenter)
-                                .background(Color.Black.copy(alpha = 0.65f))
+                                .background(Color.Black.copy(alpha = 0.5f))
                                 .statusBarsPadding()
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             IconButton(
                                 onClick = onDismissRequest,
                                 modifier = Modifier
                                     .size(42.dp)
-                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.65f), CircleShape)
                                     .testTag("crop_dismiss_button")
                             ) {
-                                Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.White)
+                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
                             }
 
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (selectedRatio == CropAspectRatio.FREEFORM) "Freeform Crop" else "Position & Crop",
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = if (selectedRatio == CropAspectRatio.FREEFORM) "Drag inside frame to move, or drag corners to resize" else "Drag inside frame to position, or pinch to scale",
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 11.sp
-                                )
-                            }
-
-                            // Rotate 90 degrees
-                            IconButton(
-                                onClick = { rotationDegrees = (rotationDegrees + 90) % 360 },
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                    .testTag("crop_rotate_button")
-                            ) {
-                                Icon(Icons.Default.RotateRight, contentDescription = "Rotate", tint = BrandSecondary)
-                            }
-
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            // Reset View
+                            // Undo / Reset View Button
                             IconButton(
                                 onClick = {
                                     userScale = 1f
@@ -435,39 +409,39 @@ fun WallpaperCropDialog(
                                     freeformBottomOffset = 0f
                                 },
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                    .size(42.dp)
+                                    .background(Color.Black.copy(alpha = 0.65f), CircleShape)
                                     .testTag("crop_reset_button")
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Color.White)
+                                Icon(Icons.Default.Refresh, contentDescription = "Undo / Reset", tint = Color.White)
                             }
                         }
 
-                        // Bottom Control Panel: Aspect Ratio Chips & Dual CTAs (Never behind navigation bar)
-                        Column(
+                        // 2. Small Overlay Button / Panel on Right Side with all cropping options
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF0F172A).copy(alpha = 0.88f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .background(Color(0xFF0F172A).copy(alpha = 0.98f))
-                                .navigationBarsPadding()
-                                .padding(horizontal = 16.dp, vertical = 14.dp)
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 12.dp)
+                                .testTag("crop_aspect_ratio_overlay")
                         ) {
-                            // Aspect Ratio Chips
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.padding(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 CropAspectRatio.values().forEach { ratio ->
                                     val isSelected = selectedRatio == ratio
                                     Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSelected) BrandSecondary else Color(0xFF1E293B),
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (isSelected) BrandSecondary else Color.Transparent,
                                         modifier = Modifier
-                                            .weight(1f)
+                                            .size(width = 46.dp, height = 38.dp)
+                                            .clip(RoundedCornerShape(12.dp))
                                             .clickable {
                                                 selectedRatio = ratio
-                                                // Reset freeform and box offsets when changing mode
                                                 boxMoveOffsetX = 0f
                                                 boxMoveOffsetY = 0f
                                                 freeformLeftOffset = 0f
@@ -476,62 +450,83 @@ fun WallpaperCropDialog(
                                                 freeformBottomOffset = 0f
                                             }
                                     ) {
-                                        Text(
-                                            text = ratio.label.substringBefore(" ("),
-                                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.8f),
-                                            fontSize = 11.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            modifier = Modifier.padding(vertical = 7.dp),
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                        )
+                                        Box(contentAlignment = Alignment.Center) {
+                                            val labelText = when (ratio) {
+                                                CropAspectRatio.FREEFORM -> "Free"
+                                                CropAspectRatio.PHONE_SCREEN -> "9:20"
+                                                CropAspectRatio.PORTRAIT -> "9:16"
+                                                CropAspectRatio.SQUARE -> "1:1"
+                                                CropAspectRatio.LANDSCAPE -> "16:9"
+                                            }
+                                            Text(
+                                                text = labelText,
+                                                color = if (isSelected) Color.White else Color.White.copy(alpha = 0.75f),
+                                                fontSize = 11.5.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                            )
+                                        }
                                     }
                                 }
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            // Action Buttons Row: Set Full (Direct) vs Set Cropped
+                        // 3. Bottom Action Buttons: Guaranteed strictly above system navigation buttons
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(Color.Transparent, Color(0xFF0F172A).copy(alpha = 0.95f))
+                                    )
+                                )
+                                .navigationBarsPadding()
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .widthIn(max = 500.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Direct Apply without cropping
+                                // Full Image (Direct)
                                 OutlinedButton(
                                     onClick = {
                                         applyFullImageWithoutCrop = true
                                         showTargetSelector = true
                                     },
-                                    shape = RoundedCornerShape(14.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)),
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                                     modifier = Modifier
-                                        .weight(0.9f)
-                                        .height(50.dp)
+                                        .weight(1f)
+                                        .height(52.dp)
                                         .testTag("set_full_image_button")
                                 ) {
                                     Icon(Icons.Default.FitScreen, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Full Image", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("Full Image", fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
                                 }
 
-                                // Apply Cropped Wallpaper
+                                // Apply Crop
                                 Button(
                                     onClick = {
                                         applyFullImageWithoutCrop = false
                                         showTargetSelector = true
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = BrandSecondary),
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier
                                         .weight(1.3f)
-                                        .height(50.dp)
+                                        .height(52.dp)
                                         .testTag("apply_crop_button")
                                 ) {
                                     Icon(Icons.Default.Crop, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Apply Crop",
+                                        text = "Apply Wallpaper",
                                         color = Color.White,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold

@@ -30,7 +30,8 @@ import java.io.OutputStream
 enum class WallpaperTarget {
     HOME,
     LOCK,
-    BOTH
+    BOTH,
+    EXTERNAL
 }
 
 class WallpaperActionManager(
@@ -79,6 +80,9 @@ class WallpaperActionManager(
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val bitmap = fetchBitmap(url) ?: return@withContext Result.failure(Exception("Failed to download wallpaper image"))
+            if (target == WallpaperTarget.EXTERNAL) {
+                return@withContext setWithExternalApp(bitmap, "wallpaper")
+            }
             val wallpaperManager = WallpaperManager.getInstance(context)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -86,6 +90,7 @@ class WallpaperActionManager(
                     WallpaperTarget.HOME -> WallpaperManager.FLAG_SYSTEM
                     WallpaperTarget.LOCK -> WallpaperManager.FLAG_LOCK
                     WallpaperTarget.BOTH -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
+                    WallpaperTarget.EXTERNAL -> WallpaperManager.FLAG_SYSTEM
                 }
                 wallpaperManager.setBitmap(bitmap, null, true, whichFlag)
             } else {
@@ -102,17 +107,39 @@ class WallpaperActionManager(
         target: WallpaperTarget
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            if (target == WallpaperTarget.EXTERNAL) {
+                return@withContext setWithExternalApp(bitmap, "cropped_wallpaper")
+            }
             val wallpaperManager = WallpaperManager.getInstance(context)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 val whichFlag = when (target) {
                     WallpaperTarget.HOME -> WallpaperManager.FLAG_SYSTEM
                     WallpaperTarget.LOCK -> WallpaperManager.FLAG_LOCK
                     WallpaperTarget.BOTH -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
+                    WallpaperTarget.EXTERNAL -> WallpaperManager.FLAG_SYSTEM
                 }
                 wallpaperManager.setBitmap(bitmap, null, true, whichFlag)
             } else {
                 wallpaperManager.setBitmap(bitmap)
             }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun setWithExternalApp(bitmap: Bitmap, title: String = "wallpaper"): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val uri = saveBitmapToPictures(bitmap, title) ?: return@withContext Result.failure(Exception("Could not prepare image"))
+            val intent = Intent(Intent.ACTION_ATTACH_DATA).apply {
+                setDataAndType(uri, "image/*")
+                putExtra("mimeType", "image/*")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = Intent.createChooser(intent, "Set Wallpaper with...").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooser)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

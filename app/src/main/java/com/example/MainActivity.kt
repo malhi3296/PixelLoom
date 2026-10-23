@@ -150,7 +150,9 @@ fun MainContent(
             Screen.HOME -> HomeScreen(
                 viewModel = viewModel,
                 onWallpaperClick = { wallpaper ->
-                    viewModel.selectWallpaper(wallpaper)
+                    if (uiState.activeWallpapers.none { it.id == wallpaper.id }) {
+                        viewModel.selectWallpaperWithList(wallpaper, uiState.trendingWallpapers)
+                    }
                     currentScreen = Screen.DETAIL
                 },
                 onNavigateFavorites = { currentScreen = Screen.FAVORITES },
@@ -177,7 +179,7 @@ fun MainContent(
                 viewModel = viewModel,
                 onBack = { currentScreen = Screen.HOME },
                 onWallpaperClick = { wallpaper ->
-                    viewModel.selectWallpaper(wallpaper)
+                    viewModel.selectWallpaperWithList(wallpaper, viewModel.favorites.value)
                     currentScreen = Screen.DETAIL
                 }
             )

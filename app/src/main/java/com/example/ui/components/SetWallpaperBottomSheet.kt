@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,6 +41,7 @@ import com.example.ui.theme.DarkSurfaceElevated
 import com.example.ui.theme.ElectricViolet
 import com.example.ui.theme.NeonCyan
 import com.example.ui.theme.NeonPurple
+import com.example.ui.theme.AmberGlow
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 
@@ -176,6 +178,18 @@ fun SetWallpaperBottomSheet(
                     accentColor = NeonPurple,
                     onClick = { onOptionSelected(WallpaperTarget.BOTH) },
                     testTag = "set_both_screens_option"
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Option 4: Set with... (Other gallery app)
+                WallpaperTargetOption(
+                    icon = Icons.Default.Collections,
+                    title = "Set with... (Other Gallery App)",
+                    subtitle = "Choose from your installed gallery or wallpaper apps",
+                    accentColor = AmberGlow,
+                    onClick = { onOptionSelected(WallpaperTarget.EXTERNAL) },
+                    testTag = "set_with_other_app_option"
                 )
             }
 

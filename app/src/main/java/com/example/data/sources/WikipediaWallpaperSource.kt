@@ -19,15 +19,15 @@ class WikipediaWallpaperSource : WallpaperSource {
     private val featuredWikimediaPhotos = listOf(
         Wallpaper(
             id = "wiki_potd_jwst_carina",
-            title = "Carina Nebula 'Cosmic Cliffs' (JWST)",
+            title = "Wikipedia Picture of the Day",
             thumbnailUrl = "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=800&auto=format&fit=crop&q=80",
             fullUrl = "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=2400&auto=format&fit=crop&q=95",
-            source = "Wikipedia / Wikimedia Commons",
+            source = "Wikipedia",
             author = "NASA, ESA, CSA, STScI",
             authorUrl = "https://commons.wikimedia.org/wiki/File:Cosmic_Cliffs_in_Carina_Nebula.jpg",
             width = 2400,
             height = 3600,
-            tags = listOf("Wikipedia", "Space", "Nebula", "JWST", "POTD"),
+            tags = listOf("Wikipedia", "Space", "Nebula", "JWST"),
             category = "Astronomy",
             viewsCount = 84000,
             likesCount = 12400
@@ -167,20 +167,19 @@ class WikipediaWallpaperSource : WallpaperSource {
             val filePage = imageObj.optJSONObject("file_page")?.optString("url") ?: "https://commons.wikimedia.org"
             val thumbUrl = imageObj.optJSONObject("thumbnail")?.optString("source") ?: return null
             val originalUrl = imageObj.optJSONObject("originalimage")?.optString("source") ?: thumbUrl
-            val title = imageObj.optJSONObject("description")?.optString("text")?.take(60) ?: "Wikimedia Picture of the Day"
             val artist = imageObj.optJSONObject("artist")?.optString("text") ?: "Wikimedia Commons Contributor"
 
             Wallpaper(
                 id = "wiki_live_potd",
-                title = title,
+                title = "Wikipedia Picture of the Day",
                 thumbnailUrl = thumbUrl,
                 fullUrl = originalUrl,
-                source = "Wikipedia / Wikimedia Commons",
+                source = "Wikipedia",
                 author = artist,
                 authorUrl = filePage,
                 width = imageObj.optJSONObject("originalimage")?.optInt("width", 2400) ?: 2400,
                 height = imageObj.optJSONObject("originalimage")?.optInt("height", 3200) ?: 3200,
-                tags = listOf("Wikipedia", "POTD", "Featured", "Photography"),
+                tags = listOf("Wikipedia", "Featured", "Photography"),
                 category = "Featured",
                 viewsCount = 100000,
                 likesCount = 15000
