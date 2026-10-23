@@ -19,10 +19,24 @@ class RedditWallpaperSource(
     override val websiteUrl: String = "https://reddit.com/r/$subreddit"
 
     override suspend fun fetchTrending(page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
-        val limit = pageSize.coerceAtLeast(30)
-        val url = "https://www.reddit.com/r/$subreddit/hot.json?limit=$limit"
+        val limit = pageSize.coerceAtLeast(25)
+        // Rotate through Reddit sorting endpoints across pages
+        val url = when (page) {
+            1 -> "https://www.reddit.com/r/$subreddit/hot.json?limit=$limit"
+            2 -> "https://www.reddit.com/r/$subreddit/top.json?t=month&limit=$limit"
+            3 -> "https://www.reddit.com/r/$subreddit/top.json?t=all&limit=$limit"
+            else -> "https://www.reddit.com/r/$subreddit/new.json?limit=$limit"
+        }
         val live = parseRedditJson(url)
-        (live + fallbackWallpapers).distinctBy { it.id }
+        val pagedFallbacks = fallbackWallpapers.mapIndexed { idx, w ->
+            if (page > 1) {
+                w.copy(
+                    id = "${w.id}_p${page}_$idx",
+                    title = "${w.title} (Page $page)"
+                )
+            } else w
+        }
+        (live + pagedFallbacks).distinctBy { it.id }.take(pageSize)
     }
 
     override suspend fun search(query: String, page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {

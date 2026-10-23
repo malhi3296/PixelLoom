@@ -61,9 +61,9 @@ data class DownloadHistoryEntity(
     val source: String
 ) {
     fun toWallpaper(): Wallpaper = Wallpaper(
-        id = wallpaperId,
+        id = "download_${localId}_${wallpaperId}",
         title = title,
-        thumbnailUrl = thumbnailUrl,
+        thumbnailUrl = if (savedUri.isNotEmpty()) savedUri else thumbnailUrl,
         fullUrl = if (savedUri.isNotEmpty()) savedUri else thumbnailUrl,
         source = source,
         author = "Downloaded Image",

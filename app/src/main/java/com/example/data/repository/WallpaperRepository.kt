@@ -28,7 +28,11 @@ class WallpaperRepository(
     suspend fun getTrendingWallpapers(sourceId: String? = null, page: Int = 1, shuffleResults: Boolean = false): List<Wallpaper> = withContext(Dispatchers.IO) {
         if (!sourceId.isNullOrEmpty() && sourceId != "all") {
             val source = SourceRegistry.getSourceById(sourceId)
-            return@withContext source?.fetchTrending(page, 30) ?: emptyList()
+            val items = source?.fetchTrending(page, 25) ?: emptyList()
+            if (items.isNotEmpty()) {
+                return@withContext items
+            }
+            return@withContext CuratedWallpaperDataset.getWallpapersForCategory(source?.category?.label ?: sourceId, page, 25)
         }
 
         // Aggregate across multiple popular sources including Space & Wikipedia directly in main wallpapers
@@ -38,7 +42,7 @@ class WallpaperRepository(
             val s = SourceRegistry.getSourceById(sid)
             if (s != null) {
                 try {
-                    results.addAll(s.fetchTrending(page, 10))
+                    results.addAll(s.fetchTrending(page, 8))
                 } catch (e: Exception) {
                     // Ignore individual source failure
                 }
@@ -60,29 +64,29 @@ class WallpaperRepository(
             return@withContext source?.search(cleanQuery, page) ?: emptyList()
         }
 
-        val results = mutableListOf<Wallpaper>()
+        // Pure matching wallpapers for this specific category or keyword
+        val categoryResults = CuratedWallpaperDataset.getWallpapersForCategory(cleanQuery, page, 25)
 
-        // 1. Instant match against Curated Wallpapers & WOTD
-        val localMatches = CuratedWallpaperDataset.wallpapersOfTheDay.filter {
-            it.title.contains(cleanQuery, ignoreCase = true) ||
-            it.category.contains(cleanQuery, ignoreCase = true) ||
-            it.tags.any { tag -> tag.contains(cleanQuery, ignoreCase = true) } ||
-            it.author.contains(cleanQuery, ignoreCase = true) ||
-            it.source.contains(cleanQuery, ignoreCase = true)
-        }
-        results.addAll(localMatches)
-
-        // 2. Query registered sources (including Wikipedia, Reddit, Wallhaven)
-        val sourcesToQuery = SourceRegistry.getAllSources().take(10)
-        for (source in sourcesToQuery) {
-            try {
-                val sourceResults = source.search(cleanQuery, page, 6)
-                results.addAll(sourceResults)
-            } catch (e: Exception) {
-                // Ignore individual source failure
+        // Query only sources that belong or specialize in this category
+        val sourceMatches = mutableListOf<Wallpaper>()
+        for (source in SourceRegistry.getAllSources()) {
+            if (source.name.contains(cleanQuery, ignoreCase = true) ||
+                source.shortName.contains(cleanQuery, ignoreCase = true) ||
+                source.category.label.contains(cleanQuery, ignoreCase = true)) {
+                try {
+                    val res = source.search(cleanQuery, page, 8)
+                    sourceMatches.addAll(res.filter {
+                        it.title.contains(cleanQuery, ignoreCase = true) ||
+                        it.category.contains(cleanQuery, ignoreCase = true) ||
+                        it.tags.any { t -> t.contains(cleanQuery, ignoreCase = true) }
+                    })
+                } catch (e: Exception) {
+                    // Ignore individual source failure
+                }
             }
         }
-        results.distinctBy { it.id }
+
+        (categoryResults + sourceMatches).distinctBy { it.id }
     }
 
     suspend fun findWallpaperById(id: String): Wallpaper? = withContext(Dispatchers.IO) {

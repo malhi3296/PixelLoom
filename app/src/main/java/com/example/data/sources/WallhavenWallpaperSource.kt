@@ -19,7 +19,13 @@ class WallhavenWallpaperSource(
     override suspend fun fetchTrending(page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
         val url = "https://wallhaven.cc/api/v1/search?sorting=toplist&order=desc&page=$page"
         val live = parseWallhavenJson(url)
-        if (live.isNotEmpty()) live else fallbackWallpapers
+        if (live.isNotEmpty()) {
+            live
+        } else {
+            fallbackWallpapers.mapIndexed { idx, it ->
+                if (page > 1) it.copy(id = "${it.id}_p${page}_$idx", title = "${it.title} (Page $page)") else it
+            }
+        }
     }
 
     override suspend fun search(query: String, page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {

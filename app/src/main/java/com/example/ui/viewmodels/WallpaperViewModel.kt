@@ -129,26 +129,49 @@ class WallpaperViewModel(
         viewModelScope.launch {
             try {
                 val wallpapers = repository.getTrendingWallpapers(sourceId = sourceId, page = 1)
-                _uiState.update { it.copy(trendingWallpapers = wallpapers, isLoading = false, canLoadMore = wallpapers.size >= 6) }
+                _uiState.update { it.copy(trendingWallpapers = wallpapers, isLoading = false, canLoadMore = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "Could not load source") }
             }
         }
     }
 
+    fun selectCategory(categoryLabel: String) {
+        val clean = categoryLabel.trim().substringAfter(" ").removePrefix("#")
+        if (categoryLabel.contains("Trending", ignoreCase = true) || clean.equals("All", ignoreCase = true)) {
+            clearSearch()
+            return
+        }
+        searchJob?.cancel()
+        currentPage = 1
+        _uiState.update { it.copy(searchQuery = clean, isSearching = true, isLoading = true, canLoadMore = true) }
+        viewModelScope.launch {
+            try {
+                val results = repository.searchWallpapers(clean, null, 1)
+                _uiState.update { it.copy(trendingWallpapers = results, isLoading = false, canLoadMore = true) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, errorMessage = "Category search failed") }
+            }
+        }
+    }
+
     fun loadMoreWallpapers() {
         val state = _uiState.value
-        if (state.isLoadingMore || !state.canLoadMore || state.isSearching) return
+        if (state.isLoadingMore || !state.canLoadMore) return
 
         _uiState.update { it.copy(isLoadingMore = true) }
         viewModelScope.launch {
             try {
                 val nextPage = currentPage + 1
-                val newItems = repository.getTrendingWallpapers(
-                    sourceId = state.selectedSourceId,
-                    page = nextPage,
-                    shuffleResults = false
-                )
+                val newItems = if (state.isSearching) {
+                    repository.searchWallpapers(state.searchQuery, state.selectedSourceId, nextPage)
+                } else {
+                    repository.getTrendingWallpapers(
+                        sourceId = state.selectedSourceId,
+                        page = nextPage,
+                        shuffleResults = false
+                    )
+                }
                 if (newItems.isNotEmpty()) {
                     currentPage = nextPage
                     _uiState.update {
@@ -156,11 +179,11 @@ class WallpaperViewModel(
                         it.copy(
                             trendingWallpapers = combined,
                             isLoadingMore = false,
-                            canLoadMore = newItems.size >= 4
+                            canLoadMore = true // Infinite scroll continues!
                         )
                     }
                 } else {
-                    _uiState.update { it.copy(isLoadingMore = false, canLoadMore = false) }
+                    _uiState.update { it.copy(isLoadingMore = false, canLoadMore = true) }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoadingMore = false) }
@@ -208,23 +231,27 @@ class WallpaperViewModel(
 
     fun selectWallpaper(wallpaper: Wallpaper) {
         val list = _uiState.value.trendingWallpapers
-        val idx = list.indexOfFirst { it.id == wallpaper.id }.coerceAtLeast(0)
+        val idx = list.indexOfFirst { it.id == wallpaper.id }
+        val activeList = if (idx >= 0) list else listOf(wallpaper)
+        val finalIdx = if (idx >= 0) idx else 0
         _uiState.update {
             it.copy(
                 selectedWallpaper = wallpaper,
-                activeWallpapers = if (list.isNotEmpty()) list else listOf(wallpaper),
-                selectedWallpaperIndex = idx
+                activeWallpapers = activeList,
+                selectedWallpaperIndex = finalIdx
             )
         }
     }
 
     fun selectWallpaperWithList(wallpaper: Wallpaper, list: List<Wallpaper>) {
-        val idx = list.indexOfFirst { it.id == wallpaper.id }.coerceAtLeast(0)
+        val idx = list.indexOfFirst { it.id == wallpaper.id }
+        val activeList = if (idx >= 0) list else (listOf(wallpaper) + list)
+        val finalIdx = if (idx >= 0) idx else 0
         _uiState.update {
             it.copy(
                 selectedWallpaper = wallpaper,
-                activeWallpapers = list,
-                selectedWallpaperIndex = idx
+                activeWallpapers = activeList,
+                selectedWallpaperIndex = finalIdx
             )
         }
     }

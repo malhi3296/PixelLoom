@@ -150,10 +150,15 @@ fun DownloadsScreen(
                         .testTag("downloads_list")
                 ) {
                     items(downloads, key = { it.localId }) { item ->
+                        val wp = item.toWallpaper()
                         DownloadHistoryItem(
                             item = item,
                             isDark = isDark,
-                            onClick = { onWallpaperClick(item.toWallpaper()) }
+                            onClick = {
+                                val allDownloads = downloads.map { it.toWallpaper() }
+                                viewModel.selectWallpaperWithList(wp, allDownloads)
+                                onWallpaperClick(wp)
+                            }
                         )
                     }
                 }

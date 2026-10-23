@@ -217,4 +217,141 @@ object CuratedWallpaperDataset {
             )
         }
     }
+
+    fun getWallpapersForCategory(category: String, page: Int = 1, pageSize: Int = 25): List<Wallpaper> {
+        val catLower = category.lowercase().trim()
+        val pool = when {
+            catLower.contains("amoled") || catLower.contains("oled") -> listOf(
+                "photo-1550684848-fac1c5b4e853" to "Pure OLED Geometric Sphere",
+                "photo-1507499739999-097706ad8914" to "Midnight Neon Lines",
+                "photo-1518770660439-4636190af475" to "Cyber Dark Silicon",
+                "photo-1541701494587-cb58502866ab" to "Liquid Dark Wave",
+                "photo-1532274402911-5a369e4c4bb5" to "Obsidian Eclipse Ring",
+                "photo-1532693322450-2cb5c511067d" to "Minimal Moon Phase",
+                "photo-1509198397868-475647b2a1e5" to "Deep Abyss Starlight",
+                "photo-1462331940025-496dfbfc7564" to "True Black Nebula Void"
+            )
+            catLower.contains("space") || catLower.contains("cosmic") || catLower.contains("astro") -> listOf(
+                "photo-1614728894747-a83421e2b9c9" to "Carina Nebula Cosmic Cliffs",
+                "photo-1506703719100-a0f3a48c0f86" to "Pillars of Creation Mid-Infrared",
+                "photo-1502134249126-9f3755a50d78" to "Andromeda Spiral Galaxy",
+                "photo-1451187580459-43490279c0fa" to "The Blue Marble Earth",
+                "photo-1509198397868-475647b2a1e5" to "Milky Way Arch Galactic Center",
+                "photo-1518709268805-4e9042af9f23" to "Helix Nebula Eye of God",
+                "photo-1462331940025-496dfbfc7564" to "Deep Stardust Cloud",
+                "photo-1532693322450-2cb5c511067d" to "Crescent Moon Horizon"
+            )
+            catLower.contains("anime") || catLower.contains("sakura") -> listOf(
+                "photo-1493976040374-85c8e12f0c0e" to "Cherry Blossom Shrine Sunset",
+                "photo-1522383225653-ed111181a951" to "Sakura Twilight Path",
+                "photo-1578632767115-351597cf2477" to "Tokyo Neon Rain Street",
+                "photo-1534447677768-be436bb09401" to "Fantasy Starlight Citadel",
+                "photo-1503899036084-c55cdd92da26" to "Kyoto Lantern Rain Alley",
+                "photo-1563089145-599997674d42" to "Neo Tokyo Floating Holograms",
+                "photo-1542751371-adc38448a05e" to "Retro Arcade Anime Dream",
+                "photo-1518709268805-4e9042af9f23" to "Shinkai Cloud Sunset Horizon"
+            )
+            catLower.contains("cyberpunk") || catLower.contains("neon") -> listOf(
+                "photo-1542751371-adc38448a05e" to "Neon Cyberpunk Alley",
+                "photo-1508739773434-c26b3d09e071" to "Outrun Sunset Highway",
+                "photo-1514565131-fce0801e5785" to "Neon City Vertigo",
+                "photo-1550751827-4bd374c3f58b" to "Cyberpunk Shadow Corridor",
+                "photo-1563089145-599997674d42" to "Vibrant Hologram Metropolis",
+                "photo-1550745165-9bc0b252726f" to "Retro Synth Grid Horizon",
+                "photo-1518709268805-4e9042af9f23" to "Electric Violet Skyline",
+                "photo-1511512578047-dfb367046420" to "Cyber Dystopia Matrix"
+            )
+            catLower.contains("minimal") || catLower.contains("clean") -> listOf(
+                "photo-1509316975850-ff9c5deb0cd9" to "Golden Desert Dunes Solitude",
+                "photo-1470071459604-3b5ec3a7fe05" to "Single Monolith Dune",
+                "photo-1579783900882-c0d3dad7b119" to "Subtle Pastel Geometry",
+                "photo-1513694203232-719a280e022f" to "Pure Concrete Symmetry",
+                "photo-1453728013993-6d66e9c9123a" to "Single Botanical Leaf",
+                "photo-1507525428034-b723cf961d3e" to "Calm Turquoise Horizon",
+                "photo-1518837695005-2083093ee35b" to "Linear Water Droplet",
+                "photo-1550684848-fac1c5b4e853" to "Prism Sphere Balance"
+            )
+            catLower.contains("nature") || catLower.contains("landscape") -> listOf(
+                "photo-1531366936337-7c912a4589a7" to "Emerald Aurora Over Nordic Fjords",
+                "photo-1464822759023-fed622ff2c3b" to "Alpine Sunrise Matterhorn",
+                "photo-1506744038136-46273834b3fb" to "Yosemite Valley Mist",
+                "photo-1448375240586-882707db888b" to "Misty Forest of Ancient Cedars",
+                "photo-1469474968028-56623f02e42e" to "Serenity in the Wilderness",
+                "photo-1470770841072-f978cf4d019e" to "Cottage by the Fjord",
+                "photo-1433086966358-54859d0ed716" to "Cascading Forest Waterfalls",
+                "photo-1519681393784-d120267933ba" to "Starry Night Over Pine Ridge"
+            )
+            catLower.contains("urban") || catLower.contains("city") || catLower.contains("architecture") -> listOf(
+                "photo-1503899036084-c55cdd92da26" to "Tokyo Rain Reflections",
+                "photo-1477959858617-67f30bc75b82" to "Chicago Skyscraper Sunset",
+                "photo-1514565131-fce0801e5785" to "Vertical Downtown Neon",
+                "photo-1486406146926-c627a92ad1ab" to "Glass Tower Geometric Angle",
+                "photo-1513694203232-719a280e022f" to "Brutalist Concrete & Azure Sky",
+                "photo-1518709268805-4e9042af9f23" to "Metropolis Twilight Glow",
+                "photo-1508739773434-c26b3d09e071" to "Midnight Overpass",
+                "photo-1507525428034-b723cf961d3e" to "Coastal Promenade"
+            )
+            catLower.contains("sci-fi") || catLower.contains("scifi") -> listOf(
+                "photo-1451187580459-43490279c0fa" to "Orbital Colony Horizon",
+                "photo-1550751827-4bd374c3f58b" to "Dystopian Cyber Gate",
+                "photo-1618005182384-a83a8bd57fbe" to "Neural Holographic Core",
+                "photo-1518770660439-4636190af475" to "Quantum Processor Architecture",
+                "photo-1563089145-599997674d42" to "Hologram Megacity",
+                "photo-1509198397868-475647b2a1e5" to "Deep Galaxy Jump Gate",
+                "photo-1534447677768-be436bb09401" to "Alien Citadel Stars",
+                "photo-1542751371-adc38448a05e" to "Synthwave Arcade"
+            )
+            catLower.contains("abstract") || catLower.contains("vector") -> listOf(
+                "photo-1541701494587-cb58502866ab" to "Fluid Liquid Prism",
+                "photo-1579783900882-c0d3dad7b119" to "Geometric Bauhaus Forms",
+                "photo-1550684848-fac1c5b4e853" to "Geometric Prismatic Prism",
+                "photo-1518837695005-2083093ee35b" to "Refractive Water Prism",
+                "photo-1563089145-599997674d42" to "Electric Cyan Gradient Wave",
+                "photo-1618005182384-a83a8bd57fbe" to "Abstract Synapse Network",
+                "photo-1508739773434-c26b3d09e071" to "Retro Horizon Gradient",
+                "photo-1518709268805-4e9042af9f23" to "Violet Chroma Flow"
+            )
+            catLower.contains("wikipedia") -> listOf(
+                "photo-1614728894747-a83421e2b9c9" to "Wikipedia Picture of the Day",
+                "photo-1517411032315-54ef2cb783bb" to "Aurora Borealis Reinefjorden",
+                "photo-1464822759023-fed622ff2c3b" to "Matterhorn Dawn Reflection",
+                "photo-1451187580459-43490279c0fa" to "The Blue Marble Apollo 17",
+                "photo-1506703719100-a0f3a48c0f86" to "Pillars of Creation Eagle Nebula",
+                "photo-1509198397868-475647b2a1e5" to "Paranal Observatory Milky Way",
+                "photo-1507525428034-b723cf961d3e" to "Crystal Blue Vatnajökull Cave",
+                "photo-1503899036084-c55cdd92da26" to "Crimson Maple Kyoto Shrine"
+            )
+            else -> listOf(
+                "photo-1506744038136-46273834b3fb" to "Yosemite Valley",
+                "photo-1518709268805-4e9042af9f23" to "Neon Peak",
+                "photo-1506703719100-a0f3a48c0f86" to "Deep Nebula",
+                "photo-1531366936337-7c912a4589a7" to "Nordic Aurora",
+                "photo-1503899036084-c55cdd92da26" to "Tokyo Rain",
+                "photo-1509316975850-ff9c5deb0cd9" to "Golden Dunes",
+                "photo-1550684848-fac1c5b4e853" to "Abstract Prism",
+                "photo-1448375240586-882707db888b" to "Forest Cedars"
+            )
+        }
+
+        val start = ((page - 1) * pageSize) % pool.size
+        return (0 until pageSize).map { i ->
+            val idx = (start + i) % pool.size
+            val (photoId, title) = pool[idx]
+            val suffix = if (page > 1) " (Series $page - #${i + 1})" else ""
+            Wallpaper(
+                id = "cat_${catLower.replace(" ", "_").take(6)}_p${page}_${i}_${photoId.takeLast(6)}",
+                title = "$title$suffix",
+                thumbnailUrl = "https://images.unsplash.com/$photoId?w=800&auto=format&fit=crop&q=80",
+                fullUrl = "https://images.unsplash.com/$photoId?w=2400&auto=format&fit=crop&q=95",
+                source = category.replaceFirstChar { it.uppercase() },
+                author = "PixelLoom Curated",
+                width = 1440,
+                height = 3120,
+                tags = listOf(category, "Curated", "HD"),
+                category = category.replaceFirstChar { it.uppercase() },
+                viewsCount = 14000 + (idx * 1500) + (page * 200),
+                likesCount = 3200 + (idx * 350) + (page * 50)
+            )
+        }
+    }
 }

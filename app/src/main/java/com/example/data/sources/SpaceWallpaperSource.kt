@@ -170,12 +170,22 @@ class SpaceWallpaperSource : WallpaperSource {
     )
 
     override suspend fun fetchTrending(page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
-        // Return curated space collection with rotation on pages
+        // Return curated space collection with rotation and page-indexed unique IDs
         val start = ((page - 1) * pageSize) % spaceWallpapers.size
         val items = mutableListOf<Wallpaper>()
         for (i in 0 until pageSize) {
             val idx = (start + i) % spaceWallpapers.size
-            items.add(spaceWallpapers[idx])
+            val base = spaceWallpapers[idx]
+            if (page > 1) {
+                items.add(
+                    base.copy(
+                        id = "${base.id}_p${page}_$i",
+                        title = "${base.title} (Voyage $page)"
+                    )
+                )
+            } else {
+                items.add(base)
+            }
         }
         items.distinctBy { it.id }
     }

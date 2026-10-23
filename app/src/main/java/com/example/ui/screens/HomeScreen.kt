@@ -346,12 +346,7 @@ fun HomeScreen(
                                         else MaterialTheme.colorScheme.outline
                                     ),
                                     modifier = Modifier.clickable {
-                                        if (categoryLabel.contains("Trending")) {
-                                            viewModel.clearSearch()
-                                        } else {
-                                            viewModel.onSearchQueryChanged(cleanTag)
-                                            viewModel.executeSearch(cleanTag)
-                                        }
+                                        viewModel.selectCategory(categoryLabel)
                                     }
                                 ) {
                                     Text(

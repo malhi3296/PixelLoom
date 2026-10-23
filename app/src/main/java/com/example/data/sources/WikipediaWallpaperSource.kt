@@ -140,13 +140,30 @@ class WikipediaWallpaperSource : WallpaperSource {
     )
 
     override suspend fun fetchTrending(page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
-        // Try live Wikimedia Commons Picture of the Day endpoint
-        val livePotd = fetchLiveWikimediaPotd()
-        if (livePotd != null) {
-            listOf(livePotd) + featuredWikimediaPhotos.filter { it.id != livePotd.id }
+        val baseList = if (page == 1) {
+            val livePotd = fetchLiveWikimediaPotd()
+            if (livePotd != null) {
+                listOf(livePotd) + featuredWikimediaPhotos.filter { it.id != livePotd.id }
+            } else {
+                featuredWikimediaPhotos
+            }
         } else {
-            featuredWikimediaPhotos
+            featuredWikimediaPhotos.mapIndexed { idx, item ->
+                item.copy(
+                    id = "${item.id}_p${page}_$idx",
+                    title = "${item.title} (Archive Vol. $page)"
+                )
+            }
         }
+        val start = ((page - 1) * pageSize) % baseList.size
+        (0 until pageSize).map { i ->
+            val idx = (start + i) % baseList.size
+            baseList[idx].let { item ->
+                if (page > 1) {
+                    item.copy(id = "${item.id}_${page}_$i")
+                } else item
+            }
+        }.distinctBy { it.id }
     }
 
     override suspend fun search(query: String, page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {

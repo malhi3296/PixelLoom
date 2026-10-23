@@ -187,8 +187,7 @@ fun MainContent(
             Screen.DOWNLOADS -> DownloadsScreen(
                 viewModel = viewModel,
                 onBack = { currentScreen = Screen.HOME },
-                onWallpaperClick = { wallpaper ->
-                    viewModel.selectWallpaper(wallpaper)
+                onWallpaperClick = { _ ->
                     currentScreen = Screen.DETAIL
                 }
             )

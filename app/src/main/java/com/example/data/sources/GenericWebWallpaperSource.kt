@@ -39,13 +39,23 @@ class GenericWebWallpaperSource(
 
     override suspend fun search(query: String, page: Int, pageSize: Int): List<Wallpaper> = withContext(Dispatchers.IO) {
         val clean = query.trim().removePrefix("#")
-        val pool = (seedWallpapers + generateCategoryPool(category, 1, 30)).distinctBy { it.id }
+        val categoryMatches = category.label.contains(clean, ignoreCase = true) ||
+                clean.contains(category.label, ignoreCase = true) ||
+                defaultTags.any { t -> t.contains(clean, ignoreCase = true) || clean.contains(t, ignoreCase = true) } ||
+                name.contains(clean, ignoreCase = true)
+
+        val pool = if (categoryMatches) {
+            (seedWallpapers + generateCategoryPool(category, page, pageSize * 2)).distinctBy { it.id }
+        } else {
+            seedWallpapers
+        }
+
         val filtered = pool.filter {
             it.title.contains(clean, ignoreCase = true) ||
             it.tags.any { t -> t.contains(clean, ignoreCase = true) } ||
             it.category.contains(clean, ignoreCase = true)
         }
-        if (filtered.isNotEmpty()) filtered else pool.take(pageSize)
+        filtered.take(pageSize)
     }
 
     private fun generateCategoryPool(cat: SourceCategory, page: Int, count: Int): List<Wallpaper> {
